@@ -12,7 +12,7 @@ We are going to parallelize panoramic image stitching, which is to stitch multip
 
 <p align="center">
   <img width="450" src="README/screenshots-9980319.png" alt="screenshots-9980319">
-  <img width="734" alt="proc" src="https://github.com/Ji-Xinyou/panoramic/assets/70172199/a2819bce-cad3-4e4f-9352-ed938f6615d7">
+  <img width="600" alt="proc" src="https://github.com/Ji-Xinyou/panoramic/assets/70172199/a2819bce-cad3-4e4f-9352-ed938f6615d7">
 </p>
 <p align="center">
 Fig 1. Example of image stitching.
