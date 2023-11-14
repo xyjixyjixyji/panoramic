@@ -10,8 +10,13 @@ We are going to parallelize panoramic image stitching, which is to stitch multip
 
 ## Background
 
-<img src="README/screenshots-9980319.png" alt="screenshots-9980319" style="zoom:50%;" />
-
+<p align="center">
+  <img width="450" src="README/screenshots-9980319.png" alt="screenshots-9980319">
+  <img width="734" alt="proc" src="https://github.com/Ji-Xinyou/panoramic/assets/70172199/a2819bce-cad3-4e4f-9352-ed938f6615d7">
+</p>
+<p align="center">
+Fig 1. Example of image stitching.
+</p>
 
 Figure 1[[^7]] shows the pipeline and an example of stitching images together. On a high level, we find feature key points in each image using SIFT. Then, we can use RANSAC to find the inliers. Then, we match features across neighboring images. Finally, we combine them based on the matched feature points. In the following subsections, we further discuss each step and how we plan to approach the parallelization.
 
@@ -41,7 +46,7 @@ There are also some tiny optimizations for this but since it is not related to p
 ### Blend images
 
 <p align="center">
-  <img width="300" alt="image" src="https://github.com/Ji-Xinyou/panoramic/assets/70172199/39d5a2ec-e5c1-43da-baeb-105bb2a0084f">
+  <img width="250" alt="image" src="https://github.com/Ji-Xinyou/panoramic/assets/70172199/39d5a2ec-e5c1-43da-baeb-105bb2a0084f">
 </p>
 <p align="center">
 Fig 2. Example of homography transformation.
