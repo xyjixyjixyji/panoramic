@@ -13,7 +13,7 @@ We are going to parallelize panoramic image stitching, which is to stitch multip
 <img src="README/screenshots-9980319.png" alt="screenshots-9980319" style="zoom:50%;" />
 
 
-Figure 1[^7] shows the pipeline and an example of stitching images together. On a high level, we find feature key points in each image using SIFT. Then, we can use RANSAC to find the inliers. Then, we match features across neighboring images. Finally, we combine them based on the matched feature points. In the following subsections, we further discuss each step and how we plan to approach the parallelization.
+Figure 1[[^7]] shows the pipeline and an example of stitching images together. On a high level, we find feature key points in each image using SIFT. Then, we can use RANSAC to find the inliers. Then, we match features across neighboring images. Finally, we combine them based on the matched feature points. In the following subsections, we further discuss each step and how we plan to approach the parallelization.
 
 ### Image acquisition
 
@@ -21,12 +21,12 @@ In this step, we simply collect a series of images with overlapping regions to b
 
 ### Identify feature
 
-In this step, we identify feature key points in each image. Feature key points are the points (*e.g.* corners) that are invariant even if an image shifts or rotates. There are several methods for detecting feature key points. Some popular choices in the C++ OpenCV library[^1] are (ordered by year of publication):
+In this step, we identify feature key points in each image. Feature key points are the points (*e.g.* corners) that are invariant even if an image shifts or rotates. There are several methods for detecting feature key points. Some popular choices in the C++ OpenCV library^[^1] are (ordered by year of publication):
 
-- **Harris Corner Detection**[^2] (`cv::cornerHarris`): a traditional approach published in 1988.
-- **Scale-Invariant Feature Transform (SIFT)**[^3] (`cv::xfeatures2d::SIFT`): a method robust to scale and rotation changes that is based on the local gradient around a key-point.
-- **Speeded-Up Robust Features (SURF)**[^4] (`cv::xfeatures2d::SURF`): an accelerated method akin to SIFT, leveraging integral images for better efficiency.
-- **Oriented FAST and Rotated BRIEF (ORB)**[^5] (`cv::ORB`): a method designed to have efficiency and good performance in real-time applications.
+- **Harris Corner Detection**[[^2]] (`cv::cornerHarris`): a traditional approach published in 1988.
+- **Scale-Invariant Feature Transform (SIFT)**[[^3]] (`cv::xfeatures2d::SIFT`): a method robust to scale and rotation changes that is based on the local gradient around a key-point.
+- **Speeded-Up Robust Features (SURF)**[[^4]] (`cv::xfeatures2d::SURF`): an accelerated method akin to SIFT, leveraging integral images for better efficiency.
+- **Oriented FAST and Rotated BRIEF (ORB)**[[^5]] (`cv::ORB`): a method designed to have efficiency and good performance in real-time applications.
 
 We will explore more and determine the one that fits most with our project. But according to the literatures **SIFT** is the most common choice.
 
@@ -47,7 +47,7 @@ There are also some tiny optimizations for this but since it is not related to p
 Fig 2. Example of homography transformation.
 </p>
 
-Homography involves a matrix transformation, as demonstrated in Figure 2, that can describe the projective (*e.g.* affine and rotation) translation from one set of points to another set of points. In our task, after finding the matching key points, we will need to find the homography matrix that can translate an image. To reduce the impact of falsely matched points, we use the Random Sample Consensus (RANSAC) [^6], an algorithm that finds the best homography transformation by:
+Homography involves a matrix transformation, as demonstrated in Figure 2, that can describe the projective (*e.g.* affine and rotation) translation from one set of points to another set of points. In our task, after finding the matching key points, we will need to find the homography matrix that can translate an image. To reduce the impact of falsely matched points, we use the Random Sample Consensus (RANSAC) [[^6]], an algorithm that finds the best homography transformation by:
 
 1. Iteratively selecting subsets of corresponding points.
 2. Estimating a homography for each subset.
@@ -60,6 +60,12 @@ We are able to parallelize this step through parallelizing the calculation for e
 Above procedures are about stitching two images. When more images are required to be stitched, we can have more parallelism by stitching them in order. The order also affects the performance of the program. For example, if we have 4 images, we have two approaches. (1) stitch 1->2->3->4 (2) stitch 1->2, 3->4 and them stitch these two images. The second option allows to stitch two images in parallel.
 
 ## The Challenge
+
+There are three major parts for parallelism, i.e. feature detection, feature matching and RANSAC homographiy matrix computing.
+
+For the feature detection, we are essentially computing the feature points for each images. However, the distribution of feature points within the image is unknown. Hence if we are subgrid dividing the image or assign pixels to threads, we will certainly encounter workload imbalance problem. So one of the biggest challenges would be tackle this imbalanceness. For the feature matching and RANSAC part, each computation has no dependency and can be fully-parallelized. Hence, the parallelism is more straightforward and the workload are more balanced.
+
+There will be more workload imbalance if we expand the problem into stitching more than two images since each image pairs have inherently different magnitude of workload. We also hope that we can tackle this problem as well.
 
 ## Resources
 
@@ -98,8 +104,8 @@ Rationale: C++ is native using parallel libararies. GHC machine is with GPU for 
 | Date        | Week | Content                                                      |
 | ----------- | ---- | ------------------------------------------------------------ |
 | 11/16-11/23 | 1    | Implement sequential version and design parallelization.     |
-| 11/24-12/4  | 2    | Implement parallelization of OpenMP and MPI. (Hopefully: CUDA) |
-| 12/5-12/10  | 3    | Optimization(Load Balancing) and benchmark.                  |
+| 11/24-12/04 | 2    | Implement parallelization of OpenMP and MPI. (Hopefully: CUDA) |
+| 12/05-12/10 | 3    | Optimization(Load Balancing) and benchmark.                  |
 | 12/11-12/15 | 4    | Writeup and presentation.                                    |
 
 ## References
