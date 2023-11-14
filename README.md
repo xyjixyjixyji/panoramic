@@ -39,10 +39,10 @@ For each pair of neighboring images, we use feature matching to determine if the
   <img width="300" alt="image" src="https://github.com/Ji-Xinyou/panoramic/assets/70172199/39d5a2ec-e5c1-43da-baeb-105bb2a0084f">
 </p>
 <p align="center">
-Fig 2. Example of homography transformation[^6^].
+Fig 2. Example of homography transformation.
 </p>
 
-Homography involves a matrix transformation, as demonstrated in Figure 2, that can describe the projective (*e.g.* affine and rotation) translation from one set of points to another set of points. In our task, after finding the matching key points, we will need to find the homography matrix that can translate an image. To reduce the impact of falsely matched points, we use the Random Sample Consensus (RANSAC) [^7^], an algorithm that finds the best homography transformation by:
+Homography involves a matrix transformation, as demonstrated in Figure 2, that can describe the projective (*e.g.* affine and rotation) translation from one set of points to another set of points. In our task, after finding the matching key points, we will need to find the homography matrix that can translate an image. To reduce the impact of falsely matched points, we use the Random Sample Consensus (RANSAC) [^6^], an algorithm that finds the best homography transformation by:
 
 1. Iteratively selecting subsets of corresponding points.
 2. Estimating a homography for each subset.
@@ -81,5 +81,4 @@ We plan to use C++ with parallelization achieved primarily by CUDA but maybe als
 [^3^]: Lowe, D. G. (2004). Distinctive Image Features from Scale-Invariant Keypoints. *International Journal of Computer Vision, 60*(2), 91–110.
 [^4^]: Bay, H., Ess, A., Tuytelaars, T., & Van Gool, L. (2008). Speeded-Up Robust Features (SURF). *Computer Vision and Image Understanding (CVIU), 110*(3), 346–359.
 [^5^]: Rublee, E., Rabaud, V., Konolige, K., & Bradski, G. (2011). ORB: An efficient alternative to SIFT or SURF. In *Proceedings of the IEEE International Conference on Computer Vision (ICCV)*.
-[^6^]: Lai, Po-Lun (Ryan) & Yilmaz, Alper. (2023). Projective reconstruction of building shape from silhouette images acquired from uncalibrated cameras.
-[^7^]: Fischler, M. A., & Bolles, R. C. (1981). Random Sample Consensus: A Paradigm for Model Fitting with Applications to Image Analysis and Automated Cartography. *Communications of the ACM (CACM), 24*(6), 381–395.
+[^6^]: Fischler, M. A., & Bolles, R. C. (1981). Random Sample Consensus: A Paradigm for Model Fitting with Applications to Image Analysis and Automated Cartography. *Communications of the ACM (CACM), 24*(6), 381–395.
