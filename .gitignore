@@ -1,3 +1,9 @@
+# cmake
+build/
+
+# clang cache
+.cache/
+
 # Prerequisites
 *.d
 
