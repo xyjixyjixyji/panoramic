@@ -47,7 +47,7 @@ There are also some tiny optimizations for this but since it is not related to p
 Fig 2. Example of homography transformation.
 </p>
 
-Homography involves a matrix transformation, as demonstrated in Figure 2, that can describe the projective (*e.g.* affine and rotation) translation from one set of points to another set of points. In our task, after finding the matching key points, we will need to find the homography matrix that can translate an image. To reduce the impact of falsely matched points, we use the Random Sample Consensus (RANSAC) [^6^], an algorithm that finds the best homography transformation by:
+Homography involves a matrix transformation, as demonstrated in Figure 2, that can describe the projective (*e.g.* affine and rotation) translation from one set of points to another set of points. In our task, after finding the matching key points, we will need to find the homography matrix that can translate an image. To reduce the impact of falsely matched points, we use the Random Sample Consensus (RANSAC) [^6], an algorithm that finds the best homography transformation by:
 
 1. Iteratively selecting subsets of corresponding points.
 2. Estimating a homography for each subset.
@@ -104,11 +104,17 @@ Rationale: C++ is native using parallel libararies. GHC machine is with GPU for 
 
 ## References
 
-[^1^]: [OpenCV library](https://opencv.org/)
-[^2^]: Harris, C., & Stephens, M. (1988). A Combined Corner and Edge Detector. In *Proceedings of the Alvey Vision Conference*.
-[^3^]: Lowe, D. G. (2004). Distinctive Image Features from Scale-Invariant Keypoints. *International Journal of Computer Vision, 60*(2), 91–110.
-[^4^]: Bay, H., Ess, A., Tuytelaars, T., & Van Gool, L. (2008). Speeded-Up Robust Features (SURF). *Computer Vision and Image Understanding (CVIU), 110*(3), 346–359.
-[^5^]: Rublee, E., Rabaud, V., Konolige, K., & Bradski, G. (2011). ORB: An efficient alternative to SIFT or SURF. In *Proceedings of the IEEE International Conference on Computer Vision (ICCV)*.
-[^6^]: Fischler, M. A., & Bolles, R. C. (1981). Random Sample Consensus: A Paradigm for Model Fitting with Applications to Image Analysis and Automated Cartography. *Communications of the ACM (CACM), 24*(6), 381–395.
-[^7^]:  Brown M, Lowe D G. Automatic panoramic image stitching using invariant features[J]. International journal of computer vision, 2007, 74: 59-73.
+[^1]: [OpenCV library](https://opencv.org/)
+
+[^2]: Harris, C., & Stephens, M. (1988). A Combined Corner and Edge Detector. In *Proceedings of the Alvey Vision Conference*.
+
+[^3]: Lowe, D. G. (2004). Distinctive Image Features from Scale-Invariant Keypoints. *International Journal of Computer Vision, 60*(2), 91–110.
+
+[^4]: Bay, H., Ess, A., Tuytelaars, T., & Van Gool, L. (2008). Speeded-Up Robust Features (SURF). *Computer Vision and Image Understanding (CVIU), 110*(3), 346–359.
+
+[^5]: Rublee, E., Rabaud, V., Konolige, K., & Bradski, G. (2011). ORB: An efficient alternative to SIFT or SURF. In *Proceedings of the IEEE International Conference on Computer Vision (ICCV)*.
+
+[^6]: Fischler, M. A., & Bolles, R. C. (1981). Random Sample Consensus: A Paradigm for Model Fitting with Applications to Image Analysis and Automated Cartography. *Communications of the ACM (CACM), 24*(6), 381–395.
+
+[^7]:  Brown M, Lowe D G. Automatic panoramic image stitching using invariant features[J]. International journal of computer vision, 2007, 74: 59-73.
 
