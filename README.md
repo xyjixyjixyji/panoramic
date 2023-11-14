@@ -69,6 +69,7 @@ Not applicable.
 We plan to use C++ with parallelization achieved primarily by CUDA but maybe also OpenMP. We will be mostly using the GHC machines but might also use PSC for performance benchmarking. 
 
 ## Schedule
+
 | Date          | Week | Content                                        |
 |---------------|------|------------------------------------------------|
 | 11/19-11/25   | 1    | Implement sequential version and design parallelization.|
