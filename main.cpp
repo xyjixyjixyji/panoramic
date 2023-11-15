@@ -1,22 +1,33 @@
 #include <detector.hpp>
 #include <iostream>
+#include <matcher.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgcodecs.hpp>
 
 int main() {
-  cv::Mat image = cv::imread("./data/waffle.png");
+  cv::Mat imageL = cv::imread("./data/viewL.png");
+  cv::Mat imageR = cv::imread("./data/viewR.png");
   auto det = SeqHarrisCornerDetector::createDetector();
-  auto keypoints = det->detect(image);
+  auto keypoints1 = det->detect(imageL);
+  auto keypoints2 = det->detect(imageR);
 
-  std::cout << "Number of keypoints detected: " << keypoints.size() << "\n";
+  std::cout << "Number of keypoints detected: " << keypoints1.size() << "\n";
+  std::cout << "Number of keypoints detected: " << keypoints2.size() << "\n";
 
-  // draw the keypoints
-  cv::Mat outImage(image.size(), CV_8UC3);
-  cv::drawKeypoints(image, keypoints, outImage);
+  auto matcher = SeqHarrisKeyPointMatcher::createMatcher(
+      imageL, imageR, keypoints1, keypoints2);
 
-  cv::imshow("Keypoints", outImage);
-  cv::waitKey(0);
+  auto matches = matcher->matchKeyPoints();
+
+  std::cout << "Number of matches: " << matches.size() << "\n";
+
+  cv::Mat img_matches;
+  cv::drawMatches(imageL, keypoints1, imageR, keypoints2, matches, img_matches);
+
+  // Show detected matches
+  cv::imshow("Matches", img_matches);
+  cv::waitKey(0); // Wait for a key press to exit
 
   return 0;
 }

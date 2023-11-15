@@ -7,11 +7,15 @@
 
 // Smaller k leads to more sensitive detection
 // Empirically, k is in [0.04, 0.06]
-const double k = 0.05;
+const double k = 0.04;
 
 // threshold for non-maximum suppression, a higher threshold will lead to less
 // keypoints
-const double thresh = 100000;
+const double thresh = 300000;
+
+// WARN: has to be odd
+// the neighbor hood is [x-NMSNeighborhood, x+NMSNeighborhood]
+const double NMSNeighborhood = 9;
 
 /**
  * @brief Detect keypoints in the input image by Harris corner method
@@ -66,8 +70,9 @@ SeqHarrisCornerDetector::detect(const cv::Mat &image) {
 
       // find the max around this point
       double max_resp = std::numeric_limits<double>::min();
-      for (int i = -1; i <= 1; i++) {
-        for (int j = -1; j <= 1; j++) {
+      int k = NMSNeighborhood / 2;
+      for (int i = -k; i <= k; i++) {
+        for (int j = -k; j <= k; j++) {
           if (i == 0 && j == 0)
             continue;
           max_resp = std::max(max_resp, harrisResp.at<double>(y + i, x + j));

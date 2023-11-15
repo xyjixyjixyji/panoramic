@@ -4,7 +4,7 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 
 # static library
 add_library(pano STATIC)
-target_sources(pano PRIVATE pano.cpp)
+target_sources(pano PRIVATE pano.cpp common.cpp)
 
 # link opencv
 target_link_libraries(pano ${OpenCV_LIBS})
