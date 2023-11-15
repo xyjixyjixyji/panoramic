@@ -1,3 +1,6 @@
+#ifndef PANO_STITCHER_HPP
+#define PANO_STITCHER_HPP
+
 #include <opencv2/core/mat.hpp>
 #include <opencv2/opencv.hpp>
 
@@ -41,3 +44,5 @@ private:
   cv::Mat image1_;
   cv::Mat image2_;
 };
+
+#endif

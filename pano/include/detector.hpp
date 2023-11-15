@@ -1,3 +1,6 @@
+#ifndef PANO_DET_HPP
+#define PANO_DET_HPP
+
 #include <opencv2/core/mat.hpp>
 #include <vector>
 
@@ -15,3 +18,5 @@ public:
     return std::make_unique<SeqHarrisCornerDetector>();
   }
 };
+
+#endif
