@@ -8,6 +8,7 @@ const int numSamples = 4;
 // the distance that we are tolerating for a point to be considered an inlier
 const double distanceThreshold = 5.0;
 
+// H maps points from image 1 to image 2
 cv::Mat SeqRansacHomographyCalculator::computeHomography() {
   // we random sample, and get the homography matrix with
   // the highest inlier count
