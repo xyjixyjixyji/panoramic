@@ -10,7 +10,7 @@ configure:
 
 .PHONY: format
 format:
-	clang-format --style=file -i $(CPP_SRC) -n --Werror
+	clang-format --style=file -i $(CPP_SRC)
 
 .PHONY: clean
 clean:
