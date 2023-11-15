@@ -6,7 +6,7 @@ build: configure
 
 .PHONY: configure
 configure:
-	cmake -B build
+	cmake -B build -DCMAKE_BUILD_TYPE:STRING=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_C_COMPILER:FILEPATH=/usr/bin/clang -DCMAKE_CXX_COMPILER:FILEPATH=/usr/bin/clang++
 
 .PHONY: format
 format:
