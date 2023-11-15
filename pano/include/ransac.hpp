@@ -7,7 +7,9 @@
 // RANSAC uses a series of random samples to generate a homography matrix.
 class RansacHomographyCalculator {
 public:
-  virtual cv::Mat computeHomography() = 0;
+  virtual cv::Mat computeHomography(std::vector<cv::KeyPoint> &keypoints1,
+                                    std::vector<cv::KeyPoint> &keypoints2,
+                                    std::vector<cv::DMatch> &matches) = 0;
   virtual ~RansacHomographyCalculator() {}
 };
 
@@ -18,20 +20,16 @@ private:
   std::vector<cv::DMatch> matches_; // kp1 -> kp2
 
 public:
-  SeqRansacHomographyCalculator(std::vector<cv::KeyPoint> &keypoints1,
-                                std::vector<cv::KeyPoint> &keypoints2,
-                                std::vector<cv::DMatch> &matches)
-      : keypoints1_(keypoints1), keypoints2_(keypoints2), matches_(matches) {}
+  SeqRansacHomographyCalculator() {}
 
   // compute the homography matrix
-  cv::Mat computeHomography() override;
+  cv::Mat computeHomography(std::vector<cv::KeyPoint> &keypoints1,
+                            std::vector<cv::KeyPoint> &keypoints2,
+                            std::vector<cv::DMatch> &matches) override;
 
   static std::unique_ptr<RansacHomographyCalculator>
-  createHomographyCalculator(std::vector<cv::KeyPoint> &keypoints1,
-                             std::vector<cv::KeyPoint> &keypoints2,
-                             std::vector<cv::DMatch> &matches) {
-    return std::make_unique<SeqRansacHomographyCalculator>(keypoints1,
-                                                           keypoints2, matches);
+  createHomographyCalculator() {
+    return std::make_unique<SeqRansacHomographyCalculator>();
   }
 };
 

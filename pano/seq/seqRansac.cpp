@@ -9,7 +9,9 @@ const int numSamples = 4;
 const double distanceThreshold = 5.0;
 
 // H maps points from image 1 to image 2
-cv::Mat SeqRansacHomographyCalculator::computeHomography() {
+cv::Mat SeqRansacHomographyCalculator::computeHomography(
+    std::vector<cv::KeyPoint> &keypoints1,
+    std::vector<cv::KeyPoint> &keypoints2, std::vector<cv::DMatch> &matches) {
   // we random sample, and get the homography matrix with
   // the highest inlier count
   cv::Mat bestHomography;
@@ -19,21 +21,21 @@ cv::Mat SeqRansacHomographyCalculator::computeHomography() {
   std::mt19937 rng(rd());
 
   for (int iter = 0; iter < numIterations; ++iter) {
-    std::shuffle(matches_.begin(), matches_.end(), rng);
+    std::shuffle(matches.begin(), matches.end(), rng);
     std::vector<cv::Point2f> srcPoints, dstPoints;
 
     // Step 1: Randomly select a minimal subset of matches
     for (int j = 0; j < numSamples; j++) {
-      srcPoints.push_back(keypoints1_[matches_[j].queryIdx].pt);
-      dstPoints.push_back(keypoints2_[matches_[j].trainIdx].pt);
+      srcPoints.push_back(keypoints1[matches[j].queryIdx].pt);
+      dstPoints.push_back(keypoints2[matches[j].trainIdx].pt);
     }
 
     cv::Mat H = cv::findHomography(srcPoints, dstPoints);
 
     int inlierCount = 0;
-    for (const auto &match : matches_) {
-      cv::Point2f pt1 = keypoints1_[match.queryIdx].pt;
-      cv::Point2f pt2 = keypoints2_[match.trainIdx].pt;
+    for (const auto &match : matches) {
+      cv::Point2f pt1 = keypoints1[match.queryIdx].pt;
+      cv::Point2f pt2 = keypoints2[match.trainIdx].pt;
       cv::Mat pt1Mat = (cv::Mat_<double>(3, 1) << pt1.x, pt1.y, 1.0);
 
       // generate the estimate of pt2
