@@ -5,17 +5,13 @@
 #include <opencv2/imgproc.hpp>
 #include <vector>
 
-// ============================ Declaration ==============================
+// Smaller k leads to more sensitive detection
+// Empirically, k is in [0.04, 0.06]
+const double k = 0.05;
 
-class SeqHarrisCornerDetector : public FeatureDetector {
-public:
-  std::vector<cv::KeyPoint> detect(const cv::Mat &image) override;
-  std::unique_ptr<FeatureDetector> createSeqHarrisCornerDetector() {
-    return std::make_unique<SeqHarrisCornerDetector>();
-  }
-};
-
-// ============================ Implementation ============================
+// threshold for non-maximum suppression, a higher threshold will lead to less
+// keypoints
+const double thresh = 100000;
 
 /**
  * @brief Detect keypoints in the input image by Harris corner method
@@ -49,9 +45,6 @@ SeqHarrisCornerDetector::detect(const cv::Mat &image) {
   gradYY = convolveSequential(gradYY, gaussianKernel);
   gradXY = convolveSequential(gradXY, gaussianKernel);
 
-  // Smaller k leads to more sensitive detection
-  // Empirically, k is in [0.04, 0.06]
-  const double k = 0.05;
   cv::Mat harrisResp = cv::Mat(gray.size(), CV_64F);
   for (int y = 0; y < gray.rows; y++) {
     for (int x = 0; x < gray.cols; x++) {
@@ -65,7 +58,6 @@ SeqHarrisCornerDetector::detect(const cv::Mat &image) {
   }
 
   // Non-maximum suppression
-  const double thresh = 10000;
   for (int y = 1; y < gray.rows; y++) {
     for (int x = 1; x < gray.cols; x++) {
       double resp = harrisResp.at<double>(y, x);

@@ -1,0 +1,1 @@
+target_sources(pano PRIVATE seq_harrisdet.cpp)
