@@ -1,2 +1,0 @@
-/usr/bin/ar qc liblibpano.a CMakeFiles/libpano.dir/pano.cpp.o
-/usr/bin/ranlib liblibpano.a
