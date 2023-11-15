@@ -14,12 +14,14 @@ const double maxSSDThresh = 2500;
  *
  * @return std::vector<cv::DMatch> the matches
  */
-std::vector<cv::DMatch> SeqHarrisKeyPointMatcher::matchKeyPoints() {
+std::vector<cv::DMatch>
+SeqHarrisKeyPointMatcher::matchKeyPoints(std::vector<cv::KeyPoint> keypointsL,
+                                         std::vector<cv::KeyPoint> keypointsR) {
   std::vector<cv::DMatch> matches;
   int border = patchSize / 2;
 
-  for (size_t i = 0; i < keypoints1_.size(); i++) {
-    const auto &kp1 = keypoints1_[i];
+  for (size_t i = 0; i < keypointsL.size(); i++) {
+    const auto &kp1 = keypointsL[i];
     cv::Point2f pos1 = kp1.pt;
 
     if (pos1.x < border || pos1.y < border || pos1.x + border >= image1_.cols ||
@@ -32,8 +34,8 @@ std::vector<cv::DMatch> SeqHarrisKeyPointMatcher::matchKeyPoints() {
 
     size_t bestMatchIndex = -1;
     double bestMatchSSD = std::numeric_limits<double>::max();
-    for (size_t j = 0; j < keypoints2_.size(); j++) {
-      const auto &kp2 = keypoints2_[j];
+    for (size_t j = 0; j < keypointsR.size(); j++) {
+      const auto &kp2 = keypointsR[j];
       cv::Point2f pos2 = kp2.pt;
 
       if (pos2.x < border || pos2.y < border ||

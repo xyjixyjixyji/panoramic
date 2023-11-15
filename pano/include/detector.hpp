@@ -13,7 +13,10 @@ public:
 
 class SeqHarrisCornerDetector : public FeatureDetector {
 public:
+  SeqHarrisCornerDetector() {}
+
   std::vector<cv::KeyPoint> detect(const cv::Mat &image) override;
+
   static std::unique_ptr<FeatureDetector> createDetector() {
     return std::make_unique<SeqHarrisCornerDetector>();
   }
