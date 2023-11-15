@@ -27,7 +27,7 @@ In this step, we simply collect a series of images with overlapping regions to b
 
 ### Identify feature
 
-In this step, we identify feature key points in each image. Feature key points are the points (_e.g._ corners) that are invariant even if an image shifts or rotates. There are several methods for detecting feature key points. Some popular choices in the C++ OpenCV library^[^1] are (ordered by year of publication):
+In this step, we identify feature key points in each image. Feature key points are the points (_e.g._ corners) that are invariant even if an image shifts or rotates. There are several methods for detecting feature key points. Some popular choices in the C++ OpenCV library[^1] are (ordered by year of publication):
 
 -   **Harris Corner Detection**[[^2]] (`cv::cornerHarris`): a traditional approach published in 1988.
 -   **Scale-Invariant Feature Transform (SIFT)**[[^3]] (`cv::xfeatures2d::SIFT`): a method robust to scale and rotation changes that is based on the local gradient around a key-point.
