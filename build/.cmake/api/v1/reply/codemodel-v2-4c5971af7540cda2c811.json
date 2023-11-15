@@ -1,0 +1,104 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1
+					],
+					"jsonFile" : "directory-.-Debug-f5ebdc15457944623624.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.14"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						1
+					]
+				},
+				{
+					"build" : "pano",
+					"childIndexes" : 
+					[
+						2
+					],
+					"jsonFile" : "directory-pano-Debug-27627345e6475fcebcbd.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.14"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "pano",
+					"targetIndexes" : 
+					[
+						0
+					]
+				},
+				{
+					"build" : "pano/seq",
+					"jsonFile" : "directory-pano.seq-Debug-a2dd4aed7a3c58665d9d.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.14"
+					},
+					"parentIndex" : 1,
+					"projectIndex" : 0,
+					"source" : "pano/seq"
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0,
+						1,
+						2
+					],
+					"name" : "pano",
+					"targetIndexes" : 
+					[
+						0,
+						1
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 1,
+					"id" : "libpano::@6c6fbf774a022b3dbf51",
+					"jsonFile" : "target-libpano-Debug-df69c1f4bf42dd77ffde.json",
+					"name" : "libpano",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pano::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pano-Debug-3442bac76a3db487f06b.json",
+					"name" : "pano",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/Users/Ji/Documents/cmu/15618/panoramic/build",
+		"source" : "/Users/Ji/Documents/cmu/15618/panoramic"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 3
+	}
+}
