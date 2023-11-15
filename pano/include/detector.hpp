@@ -8,5 +8,10 @@ public:
   virtual ~FeatureDetector() {}
 };
 
-// forward declaration for different feature detectors
-std::unique_ptr<FeatureDetector> createSeqHarrisCornerDetector();
+class SeqHarrisCornerDetector : public FeatureDetector {
+public:
+  std::vector<cv::KeyPoint> detect(const cv::Mat &image) override;
+  static std::unique_ptr<FeatureDetector> createDetector() {
+    return std::make_unique<SeqHarrisCornerDetector>();
+  }
+};

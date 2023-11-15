@@ -7,8 +7,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall -Wextra -Wpedantic -Werror")
 
 add_subdirectory(pano)
 
-add_executable(pano main.cpp)
-target_link_libraries(pano libpano)
+add_executable(pano_cmd main.cpp)
+target_link_libraries(pano_cmd pano)
 
 # find_package(OpenMP)
 # if(OpenMP_FOUND)
