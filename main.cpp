@@ -1,6 +1,8 @@
 #include <detector.hpp>
 #include <iostream>
 #include <matcher.hpp>
+#include <ransac.hpp>
+
 #include <opencv2/features2d.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgcodecs.hpp>
@@ -22,12 +24,9 @@ int main() {
 
   std::cout << "Number of matches: " << matches.size() << "\n";
 
-  cv::Mat img_matches;
-  cv::drawMatches(imageL, keypoints1, imageR, keypoints2, matches, img_matches);
-
-  // Show detected matches
-  cv::imshow("Matches", img_matches);
-  cv::waitKey(0); // Wait for a key press to exit
+  auto ransac = SeqRansacHomographyCalculator::createHomographyCalculator(
+      keypoints1, keypoints2, matches);
+  cv::Mat hMat = ransac->computeHomography();
 
   return 0;
 }

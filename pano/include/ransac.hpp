@@ -15,7 +15,7 @@ class SeqRansacHomographyCalculator : public RansacHomographyCalculator {
 private:
   std::vector<cv::KeyPoint> keypoints1_;
   std::vector<cv::KeyPoint> keypoints2_;
-  std::vector<cv::DMatch> matches_; // kp1 -> kp2{
+  std::vector<cv::DMatch> matches_; // kp1 -> kp2
 
 public:
   SeqRansacHomographyCalculator(std::vector<cv::KeyPoint> &keypoints1,
@@ -26,7 +26,7 @@ public:
   // compute the homography matrix
   cv::Mat computeHomography() override;
 
-  std::unique_ptr<RansacHomographyCalculator>
+  static std::unique_ptr<RansacHomographyCalculator>
   createHomographyCalculator(std::vector<cv::KeyPoint> &keypoints1,
                              std::vector<cv::KeyPoint> &keypoints2,
                              std::vector<cv::DMatch> &matches) {
