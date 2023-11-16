@@ -14,6 +14,27 @@ public:
   virtual ~RansacHomographyCalculator() {}
 };
 
+class OcvRansacHomographyCalculator : public RansacHomographyCalculator {
+private:
+  std::vector<cv::KeyPoint> keypoints1_;
+  std::vector<cv::KeyPoint> keypoints2_;
+  std::vector<cv::DMatch> matches_; // kp1 -> kp2
+  RansacOptions options_;
+
+public:
+  OcvRansacHomographyCalculator(RansacOptions options) : options_(options) {}
+
+  // compute the homography matrix
+  cv::Mat computeHomography(std::vector<cv::KeyPoint> &keypoints1,
+                            std::vector<cv::KeyPoint> &keypoints2,
+                            std::vector<cv::DMatch> &matches) override;
+
+  static std::unique_ptr<RansacHomographyCalculator>
+  createHomographyCalculator(RansacOptions options) {
+    return std::make_unique<OcvRansacHomographyCalculator>(options);
+  }
+};
+
 class SeqRansacHomographyCalculator : public RansacHomographyCalculator {
 private:
   std::vector<cv::KeyPoint> keypoints1_;

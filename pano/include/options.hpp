@@ -7,7 +7,13 @@
 #include <optional>
 #include <stdexcept>
 
+// --detector
 const std::string HarrisDetector = "harris";
+const std::string OpenCVSift = "OpenCVSift";
+
+// --ransac
+const std::string SeqRansac = "seq";
+const std::string OcvRansac = "ocv";
 
 struct HarrisCornerOptions {
   // Smaller k leads to more sensitive detection
@@ -64,6 +70,7 @@ struct HarrisCornerOptions {
 };
 
 struct RansacOptions {
+  std::string ransacType_;
   // # of iteration we are sampling
   int numIterations_;
   // # of samples we are using for each RANSAC iteration
@@ -74,6 +81,7 @@ struct RansacOptions {
   RansacOptions() {}
 
   RansacOptions(argparse::ArgumentParser &args) {
+    ransacType_ = args.get<std::string>("--ransac");
     numIterations_ = args.get<int>("--ransac-num-iter");
     numSamples_ = args.get<int>("--ransac-num-samples");
     distanceThreshold_ = args.get<double>("--ransac-dist-thresh");
@@ -98,6 +106,7 @@ struct RansacOptions {
 };
 
 struct DetectorOptions {
+  std::string detectorType_;
   std::optional<HarrisCornerOptions> harrisOptions_;
 };
 
@@ -111,9 +120,12 @@ struct PanoramicOptions {
     auto detectorType = args.get<std::string>("--detector");
     imgPaths_ = args.get<std::vector<std::string>>("--img");
 
+    detOptions_.detectorType_ = detectorType;
     if (detectorType == HarrisDetector) {
       detOptions_.harrisOptions_ =
           std::make_optional(HarrisCornerOptions(args));
+    } else if (detectorType == OpenCVSift) {
+      // pass
     }
 
     ransacOptions_ = RansacOptions(args);
@@ -135,8 +147,12 @@ struct PanoramicOptions {
         .required();
 
     args.add_argument("--detector")
-        .help("The type of feature detector to use: harris | ...")
+        .help("The type of feature detector to use: harris | OpenCVSift | ...")
         .default_value(HarrisDetector);
+
+    args.add_argument("--ransac")
+        .help("The type of RANSAC to use: seq | ocv")
+        .default_value(SeqRansac);
 
     args.add_argument("--warp")
         .help("The type of warp function to use: sequential | ...")
