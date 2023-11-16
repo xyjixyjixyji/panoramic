@@ -1,21 +1,23 @@
-#include <detector.hpp>
-#include <matcher.hpp>
-#include <options.hpp>
-#include <ransac.hpp>
-#include <stitcher.hpp>
+#include <pano.hpp>
 
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgcodecs.hpp>
 
+#include <cassert>
 #include <iostream>
 
 int main(int argc, char **argv) {
   PanoramicOptions options = PanoramicOptions::getRuntimeOptions(argc, argv);
-  cv::Mat imageL = cv::imread(options.imgLPath_);
-  cv::Mat imageR = cv::imread(options.imgRPath_);
+  std::vector<std::string> imgPaths = options.imgPaths_;
+  assert(imgPaths.size() >= 2 && "Need at least 2 images to stitch");
 
-  auto stitcher = Stitcher::createStitcher(imageL, imageR, options);
-  auto warped = stitcher->stitch();
+  std::vector<cv::Mat> toWarped;
+  for (auto &imgPath : imgPaths) {
+    auto img = cv::imread(imgPath, cv::IMREAD_COLOR);
+    toWarped.push_back(img);
+  }
+
+  cv::Mat warped = stitchAllSequential(toWarped, options);
 
   cv::imshow("Warped", warped);
   cv::waitKey(0);

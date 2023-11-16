@@ -2,6 +2,7 @@
 #include <common.hpp>
 #include <opencv2/core/mat.hpp>
 #include <opencv2/features2d.hpp>
+#include <stitcher.hpp>
 #include <vector>
 
 std::vector<std::vector<double>> getSobelXKernel() {
@@ -78,4 +79,34 @@ double computeSSD(const cv::Mat &input1, const cv::Mat &input2) {
   }
 
   return sum;
+}
+
+inline cv::Mat __stitchTwo(cv::Mat imageL, cv::Mat imageR,
+                           PanoramicOptions options) {
+  auto stitcher = Stitcher::createStitcher(imageL, imageR, options);
+  auto warped = stitcher->stitch();
+  return warped;
+}
+
+cv::Mat stitchAllSequential(std::vector<cv::Mat> images,
+                            PanoramicOptions options) {
+  if (images.size() == 1) {
+    return images[0];
+  }
+
+  if (images.size() == 2) {
+    return __stitchTwo(images[0], images[1], options);
+  }
+
+  std::vector<cv::Mat> toWarped;
+  for (size_t i = 0; i < images.size(); i += 2) {
+    if (i == images.size() - 1) {
+      // we have one more images
+      toWarped.push_back(images[i]);
+    } else {
+      toWarped.push_back(__stitchTwo(images[i], images[i + 1], options));
+    }
+  }
+
+  return stitchAllSequential(toWarped, options);
 }
