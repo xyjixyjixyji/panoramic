@@ -30,6 +30,9 @@ cv::Mat SeqRansacHomographyCalculator::computeHomography(
     }
 
     cv::Mat H = cv::findHomography(srcPoints, dstPoints);
+    if (H.empty()) {
+      continue;
+    }
 
     int inlierCount = 0;
     for (const auto &match : matches) {

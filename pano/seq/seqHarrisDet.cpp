@@ -55,17 +55,17 @@ SeqHarrisCornerDetector::detect(const cv::Mat &image) {
   }
 
   // Non-maximum suppression
-  for (int y = 1; y < gray.rows; y++) {
-    for (int x = 1; x < gray.cols; x++) {
+  int halfLen = NMSNeighborhood / 2;
+  for (int y = halfLen; y < gray.rows; y++) {
+    for (int x = halfLen; x < gray.cols; x++) {
       double resp = harrisResp.at<double>(y, x);
       if (resp <= thresh)
         continue;
 
       // find the max around this point
       double max_resp = std::numeric_limits<double>::min();
-      int k = NMSNeighborhood / 2;
-      for (int i = -k; i <= k; i++) {
-        for (int j = -k; j <= k; j++) {
+      for (int i = -halfLen; i <= halfLen; i++) {
+        for (int j = -halfLen; j <= halfLen; j++) {
           if (i == 0 && j == 0)
             continue;
           max_resp = std::max(max_resp, harrisResp.at<double>(y + i, x + j));

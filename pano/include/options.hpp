@@ -43,12 +43,12 @@ struct HarrisCornerOptions {
 
     args.add_argument("--harris-nms-thresh")
         .help("The threshold for non-maximum suppression")
-        .default_value(300000.)
+        .default_value(50000.)
         .action([](const std::string &value) { return std::stod(value); });
 
     args.add_argument("--harris-nms-neigh")
         .help("The neighborhood size for non-maximum suppression")
-        .default_value(9)
+        .default_value(3)
         .action([](const std::string &value) { return std::stoi(value); });
 
     args.add_argument("--harris-patch-size")
@@ -82,7 +82,7 @@ struct RansacOptions {
   static void addRansacArguments(argparse::ArgumentParser &args) {
     args.add_argument("--ransac-num-iter")
         .help("The number of iterations for RANSAC")
-        .default_value(500)
+        .default_value(1000)
         .action([](const std::string &value) { return std::stoi(value); });
 
     args.add_argument("--ransac-num-samples")
