@@ -1,9 +1,8 @@
-#include <matcher.hpp>
-#include <opencv2/core/types.hpp>
+#include "matcher.hpp"
 
 std::vector<cv::DMatch>
-OcvSiftKeypointMatcher::matchKeyPoints(std::vector<cv::KeyPoint> keypointsL,
-                                       std::vector<cv::KeyPoint> keypointsR) {
+OcvHarrisKeypointMatcher::matchKeyPoints(std::vector<cv::KeyPoint> keypointsL,
+                                         std::vector<cv::KeyPoint> keypointsR) {
   cv::Mat descriptorsL, descriptorsR;
   cv::Ptr<cv::Feature2D> sift = cv::SIFT::create();
   sift->compute(imageL_, keypointsL, descriptorsL);

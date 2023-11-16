@@ -42,14 +42,18 @@ public:
     auto detOptions = options.detOptions_;
     auto ransacOptions = options.ransacOptions_;
 
-    if (detOptions.detectorType_ == HarrisDetector) {
+    if (detOptions.detectorType_ == SeqHarrisDetector) {
       detector_ = SeqHarrisCornerDetector::createDetector(
           detOptions.harrisOptions_.value());
       matcher_ = SeqHarrisKeyPointMatcher::createMatcher(
           imageL_, imageR_, detOptions.harrisOptions_.value());
+    } else if (detOptions.detectorType_ == OpenCVHarrisDetector) {
+      detector_ = OcvHarrisCornerDetector::createDetector(
+          detOptions.harrisOptions_.value());
+      matcher_ = OcvHarrisKeypointMatcher::createMatcher(imageL_, imageR_);
     } else if (detOptions.detectorType_ == OpenCVSift) {
       detector_ = OcvSiftDetector::createDetector();
-      matcher_ = OcvKeypointMatcher::createMatcher(imageL_, imageR_);
+      matcher_ = OcvSiftKeypointMatcher::createMatcher(imageL_, imageR_);
     }
 
     if (options.ransacOptions_.ransacType_ == SeqRansac) {

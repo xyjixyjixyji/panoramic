@@ -15,14 +15,14 @@ public:
   virtual ~KeyPointMatcher() {}
 };
 
-class OcvKeypointMatcher : public KeyPointMatcher {
+class OcvHarrisKeypointMatcher : public KeyPointMatcher {
 private:
   const cv::Mat &imageL_;
   const cv::Mat &imageR_;
 
 public:
   // Initialize the matcher with two images and their keypoints
-  OcvKeypointMatcher(cv::Mat &imageL, cv::Mat &imageR)
+  OcvHarrisKeypointMatcher(cv::Mat &imageL, cv::Mat &imageR)
       : imageL_(imageL), imageR_(imageR) {}
 
   // Match keypoints detected by Harris corner detector
@@ -33,7 +33,29 @@ public:
   // Factory method
   static std::unique_ptr<KeyPointMatcher> createMatcher(cv::Mat &imageL,
                                                         cv::Mat &imageR) {
-    return std::make_unique<OcvKeypointMatcher>(imageL, imageR);
+    return std::make_unique<OcvHarrisKeypointMatcher>(imageL, imageR);
+  }
+};
+
+class OcvSiftKeypointMatcher : public KeyPointMatcher {
+private:
+  const cv::Mat &imageL_;
+  const cv::Mat &imageR_;
+
+public:
+  // Initialize the matcher with two images and their keypoints
+  OcvSiftKeypointMatcher(cv::Mat &imageL, cv::Mat &imageR)
+      : imageL_(imageL), imageR_(imageR) {}
+
+  // Match keypoints detected by Harris corner detector
+  std::vector<cv::DMatch>
+  matchKeyPoints(std::vector<cv::KeyPoint> keypointsL,
+                 std::vector<cv::KeyPoint> keypointsR) override;
+
+  // Factory method
+  static std::unique_ptr<KeyPointMatcher> createMatcher(cv::Mat &imageL,
+                                                        cv::Mat &imageR) {
+    return std::make_unique<OcvSiftKeypointMatcher>(imageL, imageR);
   }
 };
 

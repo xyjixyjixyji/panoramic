@@ -8,7 +8,8 @@
 #include <stdexcept>
 
 // --detector
-const std::string HarrisDetector = "harris";
+const std::string SeqHarrisDetector = "seqHarris";
+const std::string OpenCVHarrisDetector = "OpenCVHarris";
 const std::string OpenCVSift = "OpenCVSift";
 
 // --warp
@@ -48,12 +49,12 @@ struct HarrisCornerOptions {
   static void addHarrisArguments(argparse::ArgumentParser &args) {
     args.add_argument("--harris-k")
         .help("The k parameter for Harris Corner Detector")
-        .default_value(0.04)
+        .default_value(0.03)
         .action([](const std::string &value) { return std::stod(value); });
 
     args.add_argument("--harris-nms-thresh")
         .help("The threshold for non-maximum suppression")
-        .default_value(50000.)
+        .default_value(5000.)
         .action([](const std::string &value) { return std::stod(value); });
 
     args.add_argument("--harris-nms-neigh")
@@ -63,7 +64,7 @@ struct HarrisCornerOptions {
 
     args.add_argument("--harris-patch-size")
         .help("The patch size for Harris Corner Detector")
-        .default_value(7)
+        .default_value(5)
         .action([](const std::string &value) { return std::stoi(value); });
 
     args.add_argument("--harris-max-ssd")
@@ -125,11 +126,11 @@ struct PanoramicOptions {
     imgPaths_ = args.get<std::vector<std::string>>("--img");
 
     detOptions_.detectorType_ = detectorType;
-    if (detectorType == HarrisDetector) {
+    // opencv sift has no options
+    if (detectorType == SeqHarrisDetector ||
+        detectorType == OpenCVHarrisDetector) {
       detOptions_.harrisOptions_ =
           std::make_optional(HarrisCornerOptions(args));
-    } else if (detectorType == OpenCVSift) {
-      // pass
     }
 
     ransacOptions_ = RansacOptions(args);
@@ -154,7 +155,7 @@ struct PanoramicOptions {
 
     args.add_argument("--detector")
         .help("The type of feature detector to use: harris | OpenCVSift | ...")
-        .default_value(HarrisDetector);
+        .default_value(SeqHarrisDetector);
 
     args.add_argument("--ransac")
         .help("The type of RANSAC to use: seq | ocv")
