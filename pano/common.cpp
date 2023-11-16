@@ -81,9 +81,10 @@ double computeSSD(const cv::Mat &input1, const cv::Mat &input2) {
 }
 
 // Homography maps coordinates in imageL to imageR
-cv::Mat warp(cv::Mat imageL, cv::Mat imageR, cv::Mat homography) {
-  cv::Mat warpedImage(std::max(imageL.rows, imageR.rows),
-                      imageL.cols + imageR.cols, imageL.type());
+cv::Mat warpSerial(cv::Mat imageL, cv::Mat imageR, cv::Mat homography) {
+  cv::Mat warpedImage =
+      cv::Mat::zeros(std::max(imageL.rows, imageR.rows),
+                     imageL.cols + imageR.cols, imageL.type());
 
   // invH maps coordinates in imageR to imageL
   cv::Mat invH = homography.inv();

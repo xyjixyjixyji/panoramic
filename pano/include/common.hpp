@@ -14,6 +14,6 @@ std::vector<std::vector<double>> getGaussianKernel(int kernelSize,
 cv::Mat convolveSequential(const cv::Mat &input,
                            const std::vector<std::vector<double>> kernel);
 double computeSSD(const cv::Mat &input1, const cv::Mat &input2);
-cv::Mat warp(cv::Mat imageL, cv::Mat imageR, cv::Mat homography);
+cv::Mat warpSerial(cv::Mat imageL, cv::Mat imageR, cv::Mat homography);
 
 #endif
