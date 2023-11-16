@@ -6,5 +6,6 @@
 typedef std::function<cv::Mat(cv::Mat, cv::Mat, cv::Mat)> warpFunction_t;
 
 cv::Mat warpSequential(cv::Mat imageL, cv::Mat imageR, cv::Mat homography);
+cv::Mat warpOcv(cv::Mat imageL, cv::Mat imageR, cv::Mat homography);
 
 #endif

@@ -11,6 +11,10 @@
 const std::string HarrisDetector = "harris";
 const std::string OpenCVSift = "OpenCVSift";
 
+// --warp
+const std::string SeqWarp = "seq";
+const std::string OcvWarp = "ocv";
+
 // --ransac
 const std::string SeqRansac = "seq";
 const std::string OcvRansac = "ocv";
@@ -131,8 +135,10 @@ struct PanoramicOptions {
     ransacOptions_ = RansacOptions(args);
 
     auto warpType = args.get<std::string>("--warp");
-    if (warpType == "sequential") {
+    if (warpType == SeqWarp) {
       warpFunction_ = warpSequential;
+    } else if (warpType == OcvWarp) {
+      warpFunction_ = warpOcv;
     } else {
       throw std::runtime_error("Unsupported warp function");
     }
@@ -155,8 +161,8 @@ struct PanoramicOptions {
         .default_value(SeqRansac);
 
     args.add_argument("--warp")
-        .help("The type of warp function to use: sequential | ...")
-        .default_value("sequential");
+        .help("The type of warp function to use: seq | ocv | ...")
+        .default_value("seq");
 
     // we provide all argument w/ default values so no exception will be
     // thrown
