@@ -4,7 +4,8 @@
 #include "matcher.hpp"
 #include "options.hpp"
 #include "ransac.hpp"
-#include <memory>
+#include "warp.hpp"
+
 #include <opencv2/core/mat.hpp>
 #include <opencv2/opencv.hpp>
 
@@ -74,6 +75,8 @@ private:
   std::unique_ptr<KeyPointMatcher> matcher_;
   // homography calculator
   std::unique_ptr<RansacHomographyCalculator> homographyCalculator_;
+  // warp function
+  warpFunction_t warpFunction_;
 
   // we have two images to be stitched
   cv::Mat imageL_;

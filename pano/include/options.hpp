@@ -1,8 +1,9 @@
 #ifndef PANO_OPTIONS_HPP
 #define PANO_OPTIONS_HPP
 
+#include "warp.hpp"
+
 #include <argparse/argparse.hpp>
-#include <memory>
 #include <optional>
 #include <stdexcept>
 
@@ -105,16 +106,26 @@ struct PanoramicOptions {
   RansacOptions ransacOptions_;
   std::string imgLPath_;
   std::string imgRPath_;
+  warpFunction_t warpFunction_;
 
   PanoramicOptions(argparse::ArgumentParser &args) {
     auto detectorType = args.get<std::string>("--detector");
+    imgLPath_ = args.get<std::string>("--imgL");
+    imgRPath_ = args.get<std::string>("--imgR");
+
     if (detectorType == HarrisDetector) {
       detOptions_.harrisOptions_ =
           std::make_optional(HarrisCornerOptions(args));
     }
+
     ransacOptions_ = RansacOptions(args);
-    imgLPath_ = args.get<std::string>("--imgL");
-    imgRPath_ = args.get<std::string>("--imgR");
+
+    auto warpType = args.get<std::string>("--warp");
+    if (warpType == "sequential") {
+      warpFunction_ = warpSequential;
+    } else {
+      throw std::runtime_error("Unsupported warp function");
+    }
   }
 
   static PanoramicOptions getRuntimeOptions(int argc, char **argv) {
@@ -132,7 +143,12 @@ struct PanoramicOptions {
         .help("The type of feature detector to use: harris | ...")
         .default_value(HarrisDetector);
 
-    // we provide all argument w/ default values so no exception will be thrown
+    args.add_argument("--warp")
+        .help("The type of warp function to use: sequential | ...")
+        .default_value("sequential");
+
+    // we provide all argument w/ default values so no exception will be
+    // thrown
     HarrisCornerOptions::addHarrisArguments(args);
     RansacOptions::addRansacArguments(args);
 
