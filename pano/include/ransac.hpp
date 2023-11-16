@@ -1,6 +1,7 @@
 #ifndef PANO_RANSAC_HPP
 #define PANO_RANSAC_HPP
 
+#include "options.hpp"
 #include <opencv2/core/mat.hpp>
 #include <opencv2/core/types.hpp>
 
@@ -18,9 +19,10 @@ private:
   std::vector<cv::KeyPoint> keypoints1_;
   std::vector<cv::KeyPoint> keypoints2_;
   std::vector<cv::DMatch> matches_; // kp1 -> kp2
+  RansacOptions options_;
 
 public:
-  SeqRansacHomographyCalculator() {}
+  SeqRansacHomographyCalculator(RansacOptions options) : options_(options) {}
 
   // compute the homography matrix
   cv::Mat computeHomography(std::vector<cv::KeyPoint> &keypoints1,
@@ -28,8 +30,8 @@ public:
                             std::vector<cv::DMatch> &matches) override;
 
   static std::unique_ptr<RansacHomographyCalculator>
-  createHomographyCalculator() {
-    return std::make_unique<SeqRansacHomographyCalculator>();
+  createHomographyCalculator(RansacOptions options) {
+    return std::make_unique<SeqRansacHomographyCalculator>(options);
   }
 };
 

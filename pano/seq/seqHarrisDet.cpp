@@ -5,18 +5,6 @@
 #include <opencv2/imgproc.hpp>
 #include <vector>
 
-// Smaller k leads to more sensitive detection
-// Empirically, k is in [0.04, 0.06]
-const double k = 0.04;
-
-// threshold for non-maximum suppression, a higher threshold will lead to less
-// keypoints
-const double thresh = 300000;
-
-// WARN: has to be odd
-// the neighbor hood is [x-NMSNeighborhood, x+NMSNeighborhood]
-const double NMSNeighborhood = 9;
-
 /**
  * @brief Detect keypoints in the input image by Harris corner method
  *
@@ -25,6 +13,11 @@ const double NMSNeighborhood = 9;
  */
 std::vector<cv::KeyPoint>
 SeqHarrisCornerDetector::detect(const cv::Mat &image) {
+  // options
+  const double k = options_.k_;
+  const double thresh = options_.nmsThresh_;
+  const double NMSNeighborhood = options_.nmsNeighborhood_;
+
   std::vector<cv::KeyPoint> keypoints;
   auto sobelXKernel = getSobelXKernel();
   auto sobelYKernel = getSobelYKernel();

@@ -4,9 +4,6 @@
 #include <opencv2/core/types.hpp>
 #include <vector>
 
-const int patchSize = 7;
-const double maxSSDThresh = 2500;
-
 /**
  * @brief Match keypoints detected by Harris corner detector
  *
@@ -17,6 +14,10 @@ const double maxSSDThresh = 2500;
 std::vector<cv::DMatch>
 SeqHarrisKeyPointMatcher::matchKeyPoints(std::vector<cv::KeyPoint> keypointsL,
                                          std::vector<cv::KeyPoint> keypointsR) {
+  // options
+  const int patchSize = options_.patchSize_;
+  const double maxSSDThresh = options_.maxSSDThresh_;
+
   std::vector<cv::DMatch> matches;
   int border = patchSize / 2;
 

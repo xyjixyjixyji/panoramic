@@ -2,6 +2,7 @@
 #define PANO_STITCHER_HPP
 
 #include "matcher.hpp"
+#include "options.hpp"
 #include "ransac.hpp"
 #include <memory>
 #include <opencv2/core/mat.hpp>
@@ -34,13 +35,23 @@ public:
    * @param image1
    * @param image2
    */
-  Stitcher(std::unique_ptr<FeatureDetector> &detector,
-           std::unique_ptr<KeyPointMatcher> &matcher,
-           std::unique_ptr<RansacHomographyCalculator> &homographyCalculator,
-           cv::Mat image1, cv::Mat image2)
-      : detector_(std::move(detector)), matcher_(std::move(matcher)),
-        homographyCalculator_(std::move(homographyCalculator)), image1_(image1),
-        image2_(image2) {}
+  Stitcher(cv::Mat image1, cv::Mat image2, PanoramicOptions options) {
+    imageL_ = image1;
+    imageR_ = image2;
+    auto detOptions = options.detOptions_;
+    auto ransacOptions = options.ransacOptions_;
+
+    if (detOptions.harrisOptions_ != std::nullopt) {
+      detector_ = SeqHarrisCornerDetector::createDetector(
+          detOptions.harrisOptions_.value());
+      matcher_ = SeqHarrisKeyPointMatcher::createMatcher(
+          imageL_, imageR_, detOptions.harrisOptions_.value());
+    }
+
+    homographyCalculator_ =
+        SeqRansacHomographyCalculator::createHomographyCalculator(
+            ransacOptions);
+  }
 
   /**
    * @brief Stitch two images together to form a panorama
@@ -49,15 +60,12 @@ public:
    * @param image2 the second image
    * @return the stitched panorama
    */
-  cv::Mat stitch(const cv::Mat &imageL, const cv::Mat &imageR);
+  cv::Mat stitch();
 
-  static std::unique_ptr<Stitcher> createStitcher(
-      std::unique_ptr<FeatureDetector> &detector,
-      std::unique_ptr<KeyPointMatcher> &matcher,
-      std::unique_ptr<RansacHomographyCalculator> &homographyCalculator,
-      cv::Mat image1, cv::Mat image2) {
-    return std::make_unique<Stitcher>(detector, matcher, homographyCalculator,
-                                      image1, image2);
+  static std::unique_ptr<Stitcher> createStitcher(PanoramicOptions options) {
+    cv::Mat imageL = cv::imread(options.imgLPath_);
+    cv::Mat imageR = cv::imread(options.imgRPath_);
+    return std::make_unique<Stitcher>(imageL, imageR, options);
   }
 
 private:
@@ -69,8 +77,8 @@ private:
   std::unique_ptr<RansacHomographyCalculator> homographyCalculator_;
 
   // we have two images to be stitched
-  cv::Mat image1_;
-  cv::Mat image2_;
+  cv::Mat imageL_;
+  cv::Mat imageR_;
 };
 
 #endif
