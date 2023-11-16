@@ -154,7 +154,8 @@ struct PanoramicOptions {
         .required();
 
     args.add_argument("--detector")
-        .help("The type of feature detector to use: harris | OpenCVSift | ...")
+        .help("The type of feature detector to use: seqHarris | OpenCVHarris | "
+              "OpenCVSift | ...")
         .default_value(SeqHarrisDetector);
 
     args.add_argument("--ransac")
