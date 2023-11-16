@@ -33,4 +33,5 @@ Optional arguments:
 --ransac-num-iter The number of iterations for RANSAC [nargs=0..1] [default: 500]
 --ransac-num-samples The number of samples for each RANSAC iteration [nargs=0..1] [default: 4]
 --ransac-dist-thresh The distance threshold for a point to be considered an inlier [nargs=0..1] [default: 5]
+ --warp The type of warp function to use: sequential | ... [nargs=0..1] [default: "sequential"]
 ```

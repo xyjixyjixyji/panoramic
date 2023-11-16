@@ -8,7 +8,7 @@ cv::Mat Stitcher::stitch() {
   // hMat maps points from image 1 to image 2
   cv::Mat hMat =
       homographyCalculator_->computeHomography(keypointsL, keypointsR, matches);
-  cv::Mat warped = warpSerial(imageL_, imageR_, hMat);
+  cv::Mat warped = warpSequential(imageL_, imageR_, hMat);
 
   return warped;
 }
