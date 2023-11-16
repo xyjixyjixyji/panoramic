@@ -82,7 +82,7 @@ struct RansacOptions {
   static void addRansacArguments(argparse::ArgumentParser &args) {
     args.add_argument("--ransac-num-iter")
         .help("The number of iterations for RANSAC")
-        .default_value(500)
+        .default_value(1000)
         .action([](const std::string &value) { return std::stoi(value); });
 
     args.add_argument("--ransac-num-samples")
