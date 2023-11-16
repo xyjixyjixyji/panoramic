@@ -43,12 +43,12 @@ struct HarrisCornerOptions {
 
     args.add_argument("--harris-nms-thresh")
         .help("The threshold for non-maximum suppression")
-        .default_value(300000.)
+        .default_value(50000.)
         .action([](const std::string &value) { return std::stod(value); });
 
     args.add_argument("--harris-nms-neigh")
         .help("The neighborhood size for non-maximum suppression")
-        .default_value(9)
+        .default_value(3)
         .action([](const std::string &value) { return std::stoi(value); });
 
     args.add_argument("--harris-patch-size")
