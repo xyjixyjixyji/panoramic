@@ -10,13 +10,10 @@
 #include <iostream>
 
 int main(int argc, char **argv) {
-  cv::Mat imageL = cv::imread("./data/viewL.png");
-  cv::Mat imageR = cv::imread("./data/viewR.png");
-
   PanoramicOptions options = PanoramicOptions::getRuntimeOptions(argc, argv);
 
-  auto stitcher = Stitcher::createStitcher(imageL, imageR, options);
-  auto warped = stitcher->stitch(imageL, imageR);
+  auto stitcher = Stitcher::createStitcher(options);
+  auto warped = stitcher->stitch();
 
   cv::imshow("Warped", warped);
   cv::waitKey(0);

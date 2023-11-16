@@ -103,6 +103,8 @@ struct DetectorOptions {
 struct PanoramicOptions {
   DetectorOptions detOptions_;
   RansacOptions ransacOptions_;
+  std::string imgLPath_;
+  std::string imgRPath_;
 
   PanoramicOptions(argparse::ArgumentParser &args) {
     auto detectorType = args.get<std::string>("--detector");
@@ -110,12 +112,21 @@ struct PanoramicOptions {
       detOptions_.harrisOptions_ =
           std::make_optional(HarrisCornerOptions(args));
     }
-
     ransacOptions_ = RansacOptions(args);
+    imgLPath_ = args.get<std::string>("--imgL");
+    imgRPath_ = args.get<std::string>("--imgR");
   }
 
   static PanoramicOptions getRuntimeOptions(int argc, char **argv) {
     argparse::ArgumentParser args("Panoramic Image Stitcher");
+
+    args.add_argument("--imgL")
+        .help("The left image you want to stitch")
+        .required();
+
+    args.add_argument("--imgR")
+        .help("The right image you want to stitch")
+        .required();
 
     args.add_argument("--detector")
         .help("The type of feature detector to use: harris | ...")
