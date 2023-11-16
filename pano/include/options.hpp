@@ -7,7 +7,18 @@
 #include <optional>
 #include <stdexcept>
 
-const std::string HarrisDetector = "harris";
+// --detector
+const std::string SeqHarrisDetector = "seqHarris";
+const std::string OpenCVHarrisDetector = "OpenCVHarris";
+const std::string OpenCVSift = "OpenCVSift";
+
+// --warp
+const std::string SeqWarp = "seq";
+const std::string OcvWarp = "ocv";
+
+// --ransac
+const std::string SeqRansac = "seq";
+const std::string OcvRansac = "ocv";
 
 struct HarrisCornerOptions {
   // Smaller k leads to more sensitive detection
@@ -38,12 +49,12 @@ struct HarrisCornerOptions {
   static void addHarrisArguments(argparse::ArgumentParser &args) {
     args.add_argument("--harris-k")
         .help("The k parameter for Harris Corner Detector")
-        .default_value(0.04)
+        .default_value(0.03)
         .action([](const std::string &value) { return std::stod(value); });
 
     args.add_argument("--harris-nms-thresh")
         .help("The threshold for non-maximum suppression")
-        .default_value(50000.)
+        .default_value(5000.)
         .action([](const std::string &value) { return std::stod(value); });
 
     args.add_argument("--harris-nms-neigh")
@@ -53,7 +64,7 @@ struct HarrisCornerOptions {
 
     args.add_argument("--harris-patch-size")
         .help("The patch size for Harris Corner Detector")
-        .default_value(7)
+        .default_value(5)
         .action([](const std::string &value) { return std::stoi(value); });
 
     args.add_argument("--harris-max-ssd")
@@ -64,6 +75,7 @@ struct HarrisCornerOptions {
 };
 
 struct RansacOptions {
+  std::string ransacType_;
   // # of iteration we are sampling
   int numIterations_;
   // # of samples we are using for each RANSAC iteration
@@ -74,6 +86,7 @@ struct RansacOptions {
   RansacOptions() {}
 
   RansacOptions(argparse::ArgumentParser &args) {
+    ransacType_ = args.get<std::string>("--ransac");
     numIterations_ = args.get<int>("--ransac-num-iter");
     numSamples_ = args.get<int>("--ransac-num-samples");
     distanceThreshold_ = args.get<double>("--ransac-dist-thresh");
@@ -98,6 +111,7 @@ struct RansacOptions {
 };
 
 struct DetectorOptions {
+  std::string detectorType_;
   std::optional<HarrisCornerOptions> harrisOptions_;
 };
 
@@ -111,7 +125,10 @@ struct PanoramicOptions {
     auto detectorType = args.get<std::string>("--detector");
     imgPaths_ = args.get<std::vector<std::string>>("--img");
 
-    if (detectorType == HarrisDetector) {
+    detOptions_.detectorType_ = detectorType;
+    // opencv sift has no options
+    if (detectorType == SeqHarrisDetector ||
+        detectorType == OpenCVHarrisDetector) {
       detOptions_.harrisOptions_ =
           std::make_optional(HarrisCornerOptions(args));
     }
@@ -119,8 +136,10 @@ struct PanoramicOptions {
     ransacOptions_ = RansacOptions(args);
 
     auto warpType = args.get<std::string>("--warp");
-    if (warpType == "sequential") {
+    if (warpType == SeqWarp) {
       warpFunction_ = warpSequential;
+    } else if (warpType == OcvWarp) {
+      warpFunction_ = warpOcv;
     } else {
       throw std::runtime_error("Unsupported warp function");
     }
@@ -135,12 +154,16 @@ struct PanoramicOptions {
         .required();
 
     args.add_argument("--detector")
-        .help("The type of feature detector to use: harris | ...")
-        .default_value(HarrisDetector);
+        .help("The type of feature detector to use: harris | OpenCVSift | ...")
+        .default_value(SeqHarrisDetector);
+
+    args.add_argument("--ransac")
+        .help("The type of RANSAC to use: seq | ocv")
+        .default_value(SeqRansac);
 
     args.add_argument("--warp")
-        .help("The type of warp function to use: sequential | ...")
-        .default_value("sequential");
+        .help("The type of warp function to use: seq | ocv | ...")
+        .default_value("seq");
 
     // we provide all argument w/ default values so no exception will be
     // thrown

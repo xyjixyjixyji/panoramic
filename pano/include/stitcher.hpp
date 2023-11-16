@@ -42,16 +42,29 @@ public:
     auto detOptions = options.detOptions_;
     auto ransacOptions = options.ransacOptions_;
 
-    if (detOptions.harrisOptions_ != std::nullopt) {
+    if (detOptions.detectorType_ == SeqHarrisDetector) {
       detector_ = SeqHarrisCornerDetector::createDetector(
           detOptions.harrisOptions_.value());
       matcher_ = SeqHarrisKeyPointMatcher::createMatcher(
           imageL_, imageR_, detOptions.harrisOptions_.value());
+    } else if (detOptions.detectorType_ == OpenCVHarrisDetector) {
+      detector_ = OcvHarrisCornerDetector::createDetector(
+          detOptions.harrisOptions_.value());
+      matcher_ = OcvHarrisKeypointMatcher::createMatcher(imageL_, imageR_);
+    } else if (detOptions.detectorType_ == OpenCVSift) {
+      detector_ = OcvSiftDetector::createDetector();
+      matcher_ = OcvSiftKeypointMatcher::createMatcher(imageL_, imageR_);
     }
 
-    homographyCalculator_ =
-        SeqRansacHomographyCalculator::createHomographyCalculator(
-            ransacOptions);
+    if (options.ransacOptions_.ransacType_ == SeqRansac) {
+      homographyCalculator_ =
+          SeqRansacHomographyCalculator::createHomographyCalculator(
+              ransacOptions);
+    } else if (options.ransacOptions_.ransacType_ == OcvRansac) {
+      homographyCalculator_ =
+          OcvRansacHomographyCalculator::createHomographyCalculator(
+              ransacOptions);
+    }
   }
 
   /**

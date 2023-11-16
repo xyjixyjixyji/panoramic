@@ -27,4 +27,30 @@ public:
   }
 };
 
+class OcvHarrisCornerDetector : public FeatureDetector {
+private:
+  const HarrisCornerOptions options_;
+
+public:
+  OcvHarrisCornerDetector(HarrisCornerOptions options) : options_(options) {}
+
+  std::vector<cv::KeyPoint> detect(const cv::Mat &image) override;
+
+  static std::unique_ptr<FeatureDetector>
+  createDetector(HarrisCornerOptions options) {
+    return std::make_unique<OcvHarrisCornerDetector>(options);
+  }
+};
+
+class OcvSiftDetector : public FeatureDetector {
+public:
+  OcvSiftDetector() {}
+
+  std::vector<cv::KeyPoint> detect(const cv::Mat &image) override;
+
+  static std::unique_ptr<FeatureDetector> createDetector() {
+    return std::make_unique<OcvSiftDetector>();
+  }
+};
+
 #endif

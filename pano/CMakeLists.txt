@@ -13,3 +13,4 @@ target_include_directories(pano PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # TODO: cuda, mpi, openmp
 add_subdirectory(seq)
+add_subdirectory(opencv)
