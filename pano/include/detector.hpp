@@ -1,6 +1,7 @@
 #ifndef PANO_DET_HPP
 #define PANO_DET_HPP
 
+#include "options.hpp"
 #include <opencv2/core/mat.hpp>
 #include <vector>
 
@@ -12,13 +13,17 @@ public:
 };
 
 class SeqHarrisCornerDetector : public FeatureDetector {
+private:
+  const HarrisCornerOptions options_;
+
 public:
-  SeqHarrisCornerDetector() {}
+  SeqHarrisCornerDetector(HarrisCornerOptions options) : options_(options) {}
 
   std::vector<cv::KeyPoint> detect(const cv::Mat &image) override;
 
-  static std::unique_ptr<FeatureDetector> createDetector() {
-    return std::make_unique<SeqHarrisCornerDetector>();
+  static std::unique_ptr<FeatureDetector>
+  createDetector(HarrisCornerOptions options) {
+    return std::make_unique<SeqHarrisCornerDetector>(options);
   }
 };
 

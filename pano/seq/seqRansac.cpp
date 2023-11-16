@@ -2,16 +2,15 @@
 #include <random>
 #include <ransac.hpp>
 
-const int numIterations = 500;
-// # of samples we are using for each RANSAC iteration
-const int numSamples = 4;
-// the distance that we are tolerating for a point to be considered an inlier
-const double distanceThreshold = 5.0;
-
 // H maps points from image 1 to image 2
 cv::Mat SeqRansacHomographyCalculator::computeHomography(
     std::vector<cv::KeyPoint> &keypoints1,
     std::vector<cv::KeyPoint> &keypoints2, std::vector<cv::DMatch> &matches) {
+  // options
+  const int numIterations = options_.numIterations_;
+  const int numSamples = options_.numSamples_;
+  const double distanceThreshold = options_.distanceThreshold_;
+
   // we random sample, and get the homography matrix with
   // the highest inlier count
   cv::Mat bestHomography;

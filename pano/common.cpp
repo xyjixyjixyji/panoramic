@@ -4,8 +4,6 @@
 #include <opencv2/features2d.hpp>
 #include <vector>
 
-// Serial operations used for benchmarking parallel speedup
-
 std::vector<std::vector<double>> getSobelXKernel() {
   return {{-1, 0, 1}, {-2, 0, 2}, {-1, 0, 1}};
 }

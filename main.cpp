@@ -1,5 +1,6 @@
 #include <detector.hpp>
 #include <matcher.hpp>
+#include <options.hpp>
 #include <ransac.hpp>
 #include <stitcher.hpp>
 
@@ -8,16 +9,13 @@
 
 #include <iostream>
 
-int main() {
+int main(int argc, char **argv) {
   cv::Mat imageL = cv::imread("./data/viewL.png");
   cv::Mat imageR = cv::imread("./data/viewR.png");
 
-  auto detector = SeqHarrisCornerDetector::createDetector();
-  auto matcher = SeqHarrisKeyPointMatcher::createMatcher(imageL, imageR);
-  auto ransac = SeqRansacHomographyCalculator::createHomographyCalculator();
+  PanoramicOptions options = PanoramicOptions::getRuntimeOptions(argc, argv);
 
-  auto stitcher =
-      Stitcher::createStitcher(detector, matcher, ransac, imageL, imageR);
+  auto stitcher = Stitcher::createStitcher(imageL, imageR, options);
   auto warped = stitcher->stitch(imageL, imageR);
 
   cv::imshow("Warped", warped);
