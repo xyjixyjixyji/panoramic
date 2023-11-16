@@ -1,0 +1,1 @@
+target_sources(pano PRIVATE ocvSiftDet.cpp ocvSiftMatch.cpp)
