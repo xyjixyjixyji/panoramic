@@ -62,9 +62,8 @@ public:
    */
   cv::Mat stitch();
 
-  static std::unique_ptr<Stitcher> createStitcher(PanoramicOptions options) {
-    cv::Mat imageL = cv::imread(options.imgLPath_);
-    cv::Mat imageR = cv::imread(options.imgRPath_);
+  static std::unique_ptr<Stitcher>
+  createStitcher(cv::Mat imageL, cv::Mat imageR, PanoramicOptions options) {
     return std::make_unique<Stitcher>(imageL, imageR, options);
   }
 
