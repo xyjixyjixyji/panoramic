@@ -19,16 +19,5 @@ add_subdirectory(pano)
 add_executable(pano_cmd main.cpp)
 target_link_libraries(pano_cmd pano argparse)
 
-# TODO: cuda
-# find_package(OpenMP)
-# if(OpenMP_FOUND)
-#     add_subdirectory(pano/openmp) # the openmp itself links lopenmp, we are not doing it here
-# endif()
-
-# find_package(MPI)
-# if(MPI_FOUND)
-#     add_subdirectory(pano/mpi)
-# endif()
-
-# if you want to debug....
 # set_target_properties(pano_cmd PROPERTIES COMPILE_FLAGS "-g")
+
