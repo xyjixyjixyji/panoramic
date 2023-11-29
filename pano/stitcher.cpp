@@ -9,7 +9,7 @@ cv::Mat Stitcher::stitch() {
       !options_.use_mpi_ || (options_.use_mpi_ && options_.pid_ == 0);
   if (shouldPrint) {
     printf("========== %-20s ==========\n", "Stitching");
-  }
+
 
   Timer e2eTimer("End to end time to stitch", shouldPrint);
 
@@ -46,7 +46,6 @@ cv::Mat Stitcher::stitch() {
 
   if (shouldPrint) {
     printf("========== %-20s ==========\n", "Done");
-  }
 
   return warped;
 }
