@@ -35,4 +35,27 @@ inline void panic(const char *msg) {
   exit(1);
 }
 
+class Timer {
+public:
+  Timer(const std::string &message, const bool shouldPrint)
+      : message_(message), shouldPrint_(shouldPrint) {
+    start_ = std::chrono::high_resolution_clock::now();
+  }
+
+  ~Timer() {
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration =
+        std::chrono::duration<double, std::milli>(end - start_).count();
+    if (shouldPrint_) {
+      std::cout << message_ << ": " << std::fixed << std::setprecision(2)
+                << duration << " ms\n";
+    }
+  }
+
+private:
+  std::string message_;
+  std::chrono::high_resolution_clock::time_point start_;
+  bool shouldPrint_;
+};
+
 #endif
