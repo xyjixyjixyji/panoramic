@@ -23,7 +23,7 @@ Optional arguments:
   -h, --help            shows help message and exits
   -v, --version         prints version information and exits
   --img                 The images you want to stitch, from **left to right** [required]
-  --detector            The type of feature detector to use: seqHarris| OpenCVHarris | OpenCVSift | ... [nargs=0..1] [default: "seqHarris"]
+  --detector            The type of feature detector to use: seq | ocv | mpi | ... [nargs=0..1] [default: "seq"]
   --ransac              The type of RANSAC to use: seq | ocv [nargs=0..1] [default: "seq"]
   --warp                The type of warp function to use: seq | ocv | ... [nargs=0..1] [default: "seq"]
   --harris-k            The k parameter for Harris Corner Detector [nargs=0..1] [default: 0.03]

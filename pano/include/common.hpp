@@ -24,4 +24,10 @@ std::vector<cv::KeyPoint>
 seqHarrisCornerDetectorDetect(const cv::Mat &image,
                               HarrisCornerOptions options);
 
+std::vector<cv::DMatch>
+seqHarrisMatchKeyPoints(std::vector<cv::KeyPoint> keypointsL,
+                        std::vector<cv::KeyPoint> keypointsR,
+                        const cv::Mat &image1, const cv::Mat &image2,
+                        const HarrisCornerOptions options);
+
 #endif

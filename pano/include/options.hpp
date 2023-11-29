@@ -9,9 +9,9 @@
 #include <stdexcept>
 
 // --detector
-const std::string SeqHarrisDetector = "seqHarris";
-const std::string OpenCVHarrisDetector = "OpenCVHarris";
-const std::string MPIHarrisDetector = "MPIHarris";
+const std::string SeqHarrisDetector = "seq";
+const std::string OpenCVHarrisDetector = "ocv";
+const std::string MPIHarrisDetector = "mpi";
 
 // --warp
 const std::string SeqWarp = "seq";
@@ -122,6 +122,7 @@ struct PanoramicOptions {
   std::vector<std::string> imgPaths_;
   warpFunction_t warpFunction_;
 
+  bool use_mpi_;
   int nproc_; // MPI Only
   int pid_;   // MPI Only
 
@@ -130,7 +131,7 @@ struct PanoramicOptions {
     imgPaths_ = args.get<std::vector<std::string>>("--img");
 
     detOptions_.harrisOptions_ = std::make_optional(HarrisCornerOptions(args));
-    bool use_mpi_ = false;
+    use_mpi_ = false;
     if (detectorType == MPIHarrisDetector) {
       use_mpi_ = true;
     }
@@ -163,8 +164,7 @@ struct PanoramicOptions {
         .required();
 
     args.add_argument("--detector")
-        .help("The type of feature detector to use: seqHarris | OpenCVHarris | "
-              "...")
+        .help("The type of feature detector to use: seq | ocv | mpi | ...")
         .default_value(SeqHarrisDetector);
 
     args.add_argument("--ransac")

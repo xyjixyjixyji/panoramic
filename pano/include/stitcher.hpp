@@ -1,18 +1,17 @@
 #ifndef PANO_STITCHER_HPP
 #define PANO_STITCHER_HPP
 
-#include "matcher.hpp"
-#include "options.hpp"
-#include "ransac.hpp"
-#include "warp.hpp"
+#include <detector.hpp>
+#include <matcher.hpp>
+#include <options.hpp>
+#include <ransac.hpp>
+#include <warp.hpp>
 
 #include <memory>
 #include <opencv2/core/mat.hpp>
 #include <opencv2/opencv.hpp>
 
 #include <vector>
-
-#include <detector.hpp>
 
 /**
  * @brief Stitcher is the class that stitches two images together to form a
@@ -53,12 +52,11 @@ public:
           OcvHarrisCornerDetector(detOptions.harrisOptions_.value()));
       matcher_ = std::make_unique<OcvHarrisKeypointMatcher>(imageL_, imageR_);
     } else if (detOptions.detectorType_ == MPIHarrisDetector) {
-      detector_ =
-          std::make_unique<MPIHarrisCornerDetector>(MPIHarrisCornerDetector(
-              detOptions.harrisOptions_.value(), options.pid_, options.nproc_));
-      // matcher_ = std::make_unique<MPIHarrisKeypointMatcher>(
-      //     imageL_, imageR_, detOptions.harrisOptions_.value(), options.pid_,
-      //     options.nproc_);
+      detector_ = std::make_unique<MPIHarrisCornerDetector>(
+          detOptions.harrisOptions_.value(), options.pid_, options.nproc_);
+      matcher_ = std::make_unique<MPIHarrisKeypointMatcher>(
+          imageL_, imageR_, detOptions.harrisOptions_.value(), options.pid_,
+          options.nproc_);
     }
 
     if (options.ransacOptions_.ransacType_ == SeqRansac) {

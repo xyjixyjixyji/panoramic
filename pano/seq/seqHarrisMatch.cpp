@@ -19,50 +19,6 @@ SeqHarrisKeyPointMatcher::SeqHarrisKeyPointMatcher(cv::Mat &image1,
 std::vector<cv::DMatch>
 SeqHarrisKeyPointMatcher::matchKeyPoints(std::vector<cv::KeyPoint> keypointsL,
                                          std::vector<cv::KeyPoint> keypointsR) {
-  // options
-  const int patchSize = options_.patchSize_;
-  const double maxSSDThresh = options_.maxSSDThresh_;
-
-  std::vector<cv::DMatch> matches;
-  int border = patchSize / 2;
-
-  for (size_t i = 0; i < keypointsL.size(); i++) {
-    const auto &kp1 = keypointsL[i];
-    cv::Point2f pos1 = kp1.pt;
-
-    if (pos1.x < border || pos1.y < border || pos1.x + border >= image1_.cols ||
-        pos1.y + border >= image1_.rows) {
-      continue;
-    }
-
-    cv::Mat patch1 = image1_(
-        cv::Rect(pos1.x - border, pos1.y - border, patchSize, patchSize));
-
-    size_t bestMatchIndex = -1;
-    double bestMatchSSD = std::numeric_limits<double>::max();
-    for (size_t j = 0; j < keypointsR.size(); j++) {
-      const auto &kp2 = keypointsR[j];
-      cv::Point2f pos2 = kp2.pt;
-
-      if (pos2.x < border || pos2.y < border ||
-          pos2.x + border >= image2_.cols || pos2.y + border >= image2_.rows) {
-        continue;
-      }
-
-      cv::Mat patch2 = image2_(
-          cv::Rect(pos2.x - border, pos2.y - border, patchSize, patchSize));
-
-      double ssd = computeSSD(patch1, patch2);
-      if (ssd < bestMatchSSD) {
-        bestMatchSSD = ssd;
-        bestMatchIndex = j;
-      }
-    }
-
-    if (bestMatchSSD < maxSSDThresh) {
-      matches.push_back(cv::DMatch(i, bestMatchIndex, bestMatchSSD));
-    }
-  }
-
-  return matches;
+  return seqHarrisMatchKeyPoints(keypointsL, keypointsR, image1_, image2_,
+                                 options_);
 }

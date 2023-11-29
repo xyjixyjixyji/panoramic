@@ -47,4 +47,23 @@ public:
                  std::vector<cv::KeyPoint> keypointsR) override;
 };
 
+class MPIHarrisKeypointMatcher : public KeyPointMatcher {
+private:
+  const cv::Mat &image1_;
+  const cv::Mat &image2_;
+  const HarrisCornerOptions options_;
+  const int pid_;
+  const int nproc_;
+
+public:
+  // Initialize the matcher with two images and their keypoints
+  MPIHarrisKeypointMatcher(cv::Mat &image1, cv::Mat &image2,
+                           HarrisCornerOptions options, int pid, int nproc);
+
+  // Match keypoints detected by Harris corner detector
+  std::vector<cv::DMatch>
+  matchKeyPoints(std::vector<cv::KeyPoint> keypointsL,
+                 std::vector<cv::KeyPoint> keypointsR) override;
+};
+
 #endif

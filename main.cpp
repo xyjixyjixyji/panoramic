@@ -1,5 +1,6 @@
 #include <pano.hpp>
 
+#include <mpi.h>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgcodecs.hpp>
 
@@ -19,8 +20,16 @@ int main(int argc, char **argv) {
 
   cv::Mat warped = stitchAllSequential(toWarped, options);
 
-  cv::imshow("Warped", warped);
-  cv::waitKey(0);
+  if (options.use_mpi_) {
+    if (options.pid_ == 0) {
+      cv::imshow("Warped", warped);
+      cv::waitKey(0);
+    }
+    MPI_Finalize();
+  } else {
+    cv::imshow("Warped", warped);
+    cv::waitKey(0);
+  }
 
   return 0;
 }
