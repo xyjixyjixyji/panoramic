@@ -1,5 +1,9 @@
 #include "matcher.hpp"
 
+OcvHarrisKeypointMatcher::OcvHarrisKeypointMatcher(cv::Mat &imageL,
+                                                   cv::Mat &imageR)
+    : imageL_(imageL), imageR_(imageR) {}
+
 std::vector<cv::DMatch>
 OcvHarrisKeypointMatcher::matchKeyPoints(std::vector<cv::KeyPoint> keypointsL,
                                          std::vector<cv::KeyPoint> keypointsR) {

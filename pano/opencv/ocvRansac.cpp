@@ -1,5 +1,9 @@
 #include <ransac.hpp>
 
+OcvRansacHomographyCalculator::OcvRansacHomographyCalculator(
+    RansacOptions options)
+    : options_(options) {}
+
 cv::Mat OcvRansacHomographyCalculator::computeHomography(
     std::vector<cv::KeyPoint> &keypoints1,
     std::vector<cv::KeyPoint> &keypoints2, std::vector<cv::DMatch> &matches) {

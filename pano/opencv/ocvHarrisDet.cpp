@@ -1,6 +1,9 @@
 #include <detector.hpp>
 #include <opencv2/imgproc.hpp>
 
+OcvHarrisCornerDetector::OcvHarrisCornerDetector(HarrisCornerOptions options)
+    : options_(options) {}
+
 std::vector<cv::KeyPoint>
 OcvHarrisCornerDetector::detect(const cv::Mat &image) {
   std::vector<cv::KeyPoint> keypoints;

@@ -22,17 +22,12 @@ private:
   RansacOptions options_;
 
 public:
-  OcvRansacHomographyCalculator(RansacOptions options) : options_(options) {}
+  OcvRansacHomographyCalculator(RansacOptions options);
 
   // compute the homography matrix
   cv::Mat computeHomography(std::vector<cv::KeyPoint> &keypoints1,
                             std::vector<cv::KeyPoint> &keypoints2,
                             std::vector<cv::DMatch> &matches) override;
-
-  static std::unique_ptr<RansacHomographyCalculator>
-  createHomographyCalculator(RansacOptions options) {
-    return std::make_unique<OcvRansacHomographyCalculator>(options);
-  }
 };
 
 class SeqRansacHomographyCalculator : public RansacHomographyCalculator {
@@ -43,17 +38,12 @@ private:
   RansacOptions options_;
 
 public:
-  SeqRansacHomographyCalculator(RansacOptions options) : options_(options) {}
+  SeqRansacHomographyCalculator(RansacOptions options);
 
   // compute the homography matrix
   cv::Mat computeHomography(std::vector<cv::KeyPoint> &keypoints1,
                             std::vector<cv::KeyPoint> &keypoints2,
                             std::vector<cv::DMatch> &matches) override;
-
-  static std::unique_ptr<RansacHomographyCalculator>
-  createHomographyCalculator(RansacOptions options) {
-    return std::make_unique<SeqRansacHomographyCalculator>(options);
-  }
 };
 
 #endif

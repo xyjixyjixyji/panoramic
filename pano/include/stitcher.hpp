@@ -6,6 +6,7 @@
 #include "ransac.hpp"
 #include "warp.hpp"
 
+#include <memory>
 #include <opencv2/core/mat.hpp>
 #include <opencv2/opencv.hpp>
 
@@ -43,24 +44,22 @@ public:
     auto ransacOptions = options.ransacOptions_;
 
     if (detOptions.detectorType_ == SeqHarrisDetector) {
-      detector_ = SeqHarrisCornerDetector::createDetector(
-          detOptions.harrisOptions_.value());
-      matcher_ = SeqHarrisKeyPointMatcher::createMatcher(
+      detector_ = std::make_unique<SeqHarrisCornerDetector>(
+          SeqHarrisCornerDetector(detOptions.harrisOptions_.value()));
+      matcher_ = std::make_unique<SeqHarrisKeyPointMatcher>(
           imageL_, imageR_, detOptions.harrisOptions_.value());
     } else if (detOptions.detectorType_ == OpenCVHarrisDetector) {
-      detector_ = OcvHarrisCornerDetector::createDetector(
-          detOptions.harrisOptions_.value());
-      matcher_ = OcvHarrisKeypointMatcher::createMatcher(imageL_, imageR_);
+      detector_ = std::make_unique<OcvHarrisCornerDetector>(
+          OcvHarrisCornerDetector(detOptions.harrisOptions_.value()));
+      matcher_ = std::make_unique<OcvHarrisKeypointMatcher>(imageL_, imageR_);
     }
 
     if (options.ransacOptions_.ransacType_ == SeqRansac) {
       homographyCalculator_ =
-          SeqRansacHomographyCalculator::createHomographyCalculator(
-              ransacOptions);
+          std::make_unique<SeqRansacHomographyCalculator>(ransacOptions);
     } else if (options.ransacOptions_.ransacType_ == OcvRansac) {
       homographyCalculator_ =
-          OcvRansacHomographyCalculator::createHomographyCalculator(
-              ransacOptions);
+          std::make_unique<OcvRansacHomographyCalculator>(ransacOptions);
     }
   }
 

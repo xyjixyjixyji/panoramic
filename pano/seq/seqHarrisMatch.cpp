@@ -4,6 +4,11 @@
 #include <opencv2/core/types.hpp>
 #include <vector>
 
+SeqHarrisKeyPointMatcher::SeqHarrisKeyPointMatcher(cv::Mat &image1,
+                                                   cv::Mat &image2,
+                                                   HarrisCornerOptions options)
+    : image1_(image1), image2_(image2), options_(options) {}
+
 /**
  * @brief Match keypoints detected by Harris corner detector
  *

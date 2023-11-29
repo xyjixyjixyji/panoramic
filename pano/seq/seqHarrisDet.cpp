@@ -5,6 +5,9 @@
 #include <opencv2/imgproc.hpp>
 #include <vector>
 
+SeqHarrisCornerDetector::SeqHarrisCornerDetector(HarrisCornerOptions options)
+    : options_(options) {}
+
 /**
  * @brief Detect keypoints in the input image by Harris corner method
  *
