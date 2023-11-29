@@ -10,7 +10,6 @@
 // --detector
 const std::string SeqHarrisDetector = "seqHarris";
 const std::string OpenCVHarrisDetector = "OpenCVHarris";
-const std::string OpenCVSift = "OpenCVSift";
 
 // --warp
 const std::string SeqWarp = "seq";
@@ -126,7 +125,6 @@ struct PanoramicOptions {
     imgPaths_ = args.get<std::vector<std::string>>("--img");
 
     detOptions_.detectorType_ = detectorType;
-    // opencv sift has no options
     if (detectorType == SeqHarrisDetector ||
         detectorType == OpenCVHarrisDetector) {
       detOptions_.harrisOptions_ =
@@ -155,7 +153,7 @@ struct PanoramicOptions {
 
     args.add_argument("--detector")
         .help("The type of feature detector to use: seqHarris | OpenCVHarris | "
-              "OpenCVSift | ...")
+              "...")
         .default_value(SeqHarrisDetector);
 
     args.add_argument("--ransac")

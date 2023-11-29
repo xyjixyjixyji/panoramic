@@ -51,9 +51,6 @@ public:
       detector_ = OcvHarrisCornerDetector::createDetector(
           detOptions.harrisOptions_.value());
       matcher_ = OcvHarrisKeypointMatcher::createMatcher(imageL_, imageR_);
-    } else if (detOptions.detectorType_ == OpenCVSift) {
-      detector_ = OcvSiftDetector::createDetector();
-      matcher_ = OcvSiftKeypointMatcher::createMatcher(imageL_, imageR_);
     }
 
     if (options.ransacOptions_.ransacType_ == SeqRansac) {

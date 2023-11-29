@@ -42,14 +42,18 @@ public:
   }
 };
 
-class OcvSiftDetector : public FeatureDetector {
+class MPIHarrisCornerDetector : public FeatureDetector {
+private:
+  const HarrisCornerOptions options_;
+
 public:
-  OcvSiftDetector() {}
+  MPIHarrisCornerDetector(HarrisCornerOptions options) : options_(options) {}
 
   std::vector<cv::KeyPoint> detect(const cv::Mat &image) override;
 
-  static std::unique_ptr<FeatureDetector> createDetector() {
-    return std::make_unique<OcvSiftDetector>();
+  static std::unique_ptr<FeatureDetector>
+  createDetector(HarrisCornerOptions options) {
+    return std::make_unique<MPIHarrisCornerDetector>(options);
   }
 };
 
