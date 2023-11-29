@@ -23,6 +23,11 @@ MPIHarrisCornerDetector::detect(const cv::Mat &image) {
   std::vector<cv::KeyPoint> localKeypoints =
       seqHarrisCornerDetectorDetect(subImage, options_);
 
+  // offset the row
+  for (auto &keypoint : localKeypoints) {
+    keypoint.pt.y += start_row;
+  }
+
   // Gather the number of keypoints detected by each process
   std::vector<int> keypointNums(nproc_);
   int localNumKeypoints = static_cast<int>(localKeypoints.size());
@@ -45,6 +50,9 @@ MPIHarrisCornerDetector::detect(const cv::Mat &image) {
   for (int i = 1; i < nproc_; ++i) {
     byteDispl[i] = byteDispl[i - 1] + byteCounts[i - 1];
   }
+
+  printf("[pid:%d/%d] localNumKeypoints: %d\n", pid_, nproc_,
+         localNumKeypoints);
 
   // Use MPI_Allgatherv to gather keypoints from all processes
   MPI_Allgatherv(localKeypoints.data(),

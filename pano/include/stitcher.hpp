@@ -38,7 +38,8 @@ public:
    * @param image1
    * @param image2
    */
-  Stitcher(cv::Mat image1, cv::Mat image2, PanoramicOptions options) {
+  Stitcher(cv::Mat image1, cv::Mat image2, PanoramicOptions options)
+      : options_(options) {
     imageL_ = image1;
     imageR_ = image2;
     auto detOptions = options.detOptions_;
@@ -87,6 +88,8 @@ public:
   }
 
 private:
+  // options
+  PanoramicOptions options_;
   // feature detector
   std::unique_ptr<FeatureDetector> detector_;
   // matcher

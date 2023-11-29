@@ -22,13 +22,11 @@ int main(int argc, char **argv) {
 
   if (options.use_mpi_) {
     if (options.pid_ == 0) {
-      cv::imshow("Warped", warped);
-      cv::waitKey(0);
+      cv::imwrite("Warped.png", warped);
     }
     MPI_Finalize();
   } else {
-    cv::imshow("Warped", warped);
-    cv::waitKey(0);
+    cv::imwrite("Warped.png", warped);
   }
 
   return 0;
