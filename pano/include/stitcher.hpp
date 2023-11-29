@@ -52,6 +52,13 @@ public:
       detector_ = std::make_unique<OcvHarrisCornerDetector>(
           OcvHarrisCornerDetector(detOptions.harrisOptions_.value()));
       matcher_ = std::make_unique<OcvHarrisKeypointMatcher>(imageL_, imageR_);
+    } else if (detOptions.detectorType_ == MPIHarrisDetector) {
+      detector_ =
+          std::make_unique<MPIHarrisCornerDetector>(MPIHarrisCornerDetector(
+              detOptions.harrisOptions_.value(), options.pid_, options.nproc_));
+      // matcher_ = std::make_unique<MPIHarrisKeypointMatcher>(
+      //     imageL_, imageR_, detOptions.harrisOptions_.value(), options.pid_,
+      //     options.nproc_);
     }
 
     if (options.ransacOptions_.ransacType_ == SeqRansac) {

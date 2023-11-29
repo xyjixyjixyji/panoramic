@@ -36,9 +36,11 @@ public:
 class MPIHarrisCornerDetector : public FeatureDetector {
 private:
   const HarrisCornerOptions options_;
+  const int nproc_;
+  const int pid_;
 
 public:
-  MPIHarrisCornerDetector(HarrisCornerOptions options);
+  MPIHarrisCornerDetector(HarrisCornerOptions options, int pid, int nproc);
 
   std::vector<cv::KeyPoint> detect(const cv::Mat &image) override;
 };

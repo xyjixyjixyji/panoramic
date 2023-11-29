@@ -20,4 +20,8 @@ double computeSSD(const cv::Mat &input1, const cv::Mat &input2);
 cv::Mat stitchAllSequential(std::vector<cv::Mat> images,
                             PanoramicOptions options);
 
+std::vector<cv::KeyPoint>
+seqHarrisCornerDetectorDetect(const cv::Mat &image,
+                              HarrisCornerOptions options);
+
 #endif

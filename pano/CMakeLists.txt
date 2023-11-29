@@ -13,6 +13,7 @@ target_sources(pano PRIVATE stitcher.cpp common.cpp)
 # link opencv
 target_link_libraries(pano PRIVATE argparse)
 target_link_libraries(pano PUBLIC ${OpenCV_LIBS})
+target_link_libraries(pano PUBLIC MPI::MPI_CXX)
 
 target_include_directories(pano PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
