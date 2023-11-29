@@ -110,3 +110,127 @@ cv::Mat stitchAllSequential(std::vector<cv::Mat> images,
 
   return stitchAllSequential(toWarped, options);
 }
+
+std::vector<cv::KeyPoint>
+seqHarrisCornerDetectorDetect(const cv::Mat &image,
+                              HarrisCornerOptions options) {
+  // options
+  const double k = options.k_;
+  const double thresh = options.nmsThresh_;
+  const double NMSNeighborhood = options.nmsNeighborhood_;
+
+  std::vector<cv::KeyPoint> keypoints;
+  auto sobelXKernel = getSobelXKernel();
+  auto sobelYKernel = getSobelYKernel();
+  auto gaussianKernel = getGaussianKernel(5, 1.0);
+
+  // Ensure the image is grayscale
+  cv::Mat gray;
+  if (image.channels() == 3) {
+    cvtColor(image, gray, cv::COLOR_BGR2GRAY);
+  } else {
+    gray = image;
+  }
+  gray.convertTo(gray, CV_64F); // Ensure the image is in double format
+
+  cv::Mat gradX = convolveSequential(gray, sobelXKernel);
+  cv::Mat gradY = convolveSequential(gray, sobelYKernel);
+  cv::Mat gradXX = gradX.mul(gradX);
+  cv::Mat gradYY = gradY.mul(gradY);
+  cv::Mat gradXY = gradX.mul(gradY);
+
+  gradXX = convolveSequential(gradXX, gaussianKernel);
+  gradYY = convolveSequential(gradYY, gaussianKernel);
+  gradXY = convolveSequential(gradXY, gaussianKernel);
+
+  cv::Mat harrisResp = cv::Mat(gray.size(), CV_64F);
+  for (int y = 0; y < gray.rows; y++) {
+    for (int x = 0; x < gray.cols; x++) {
+      double xx = gradXX.at<double>(y, x);
+      double yy = gradYY.at<double>(y, x);
+      double xy = gradXY.at<double>(y, x);
+      double det = xx * yy - xy * xy;
+      double trace = xx + yy;
+      harrisResp.at<double>(y, x) = det - k * trace * trace;
+    }
+  }
+
+  // Non-maximum suppression
+  int halfLen = NMSNeighborhood / 2;
+  for (int y = halfLen; y < gray.rows; y++) {
+    for (int x = halfLen; x < gray.cols; x++) {
+      double resp = harrisResp.at<double>(y, x);
+      if (resp <= thresh)
+        continue;
+
+      // find the max around this point
+      double max_resp = std::numeric_limits<double>::min();
+      for (int i = -halfLen; i <= halfLen; i++) {
+        for (int j = -halfLen; j <= halfLen; j++) {
+          if (i == 0 && j == 0)
+            continue;
+          max_resp = std::max(max_resp, harrisResp.at<double>(y + i, x + j));
+        }
+      }
+
+      if (resp > max_resp) {
+        keypoints.push_back(cv::KeyPoint(x, y, 1.f));
+      }
+    }
+  }
+
+  return keypoints;
+}
+
+std::vector<cv::DMatch>
+seqHarrisMatchKeyPoints(std::vector<cv::KeyPoint> keypointsL,
+                        std::vector<cv::KeyPoint> keypointsR,
+                        const cv::Mat &image1, const cv::Mat &image2,
+                        const HarrisCornerOptions options, int offset) {
+  // options
+  const int patchSize = options.patchSize_;
+  const double maxSSDThresh = options.maxSSDThresh_;
+
+  std::vector<cv::DMatch> matches;
+  int border = patchSize / 2;
+
+  for (size_t i = 0; i < keypointsL.size(); i++) {
+    const auto &kp1 = keypointsL[i];
+    cv::Point2f pos1 = kp1.pt;
+
+    if (pos1.x < border || pos1.y < border || pos1.x + border >= image1.cols ||
+        pos1.y + border >= image1.rows) {
+      continue;
+    }
+
+    cv::Mat patch1 = image1(
+        cv::Rect(pos1.x - border, pos1.y - border, patchSize, patchSize));
+
+    size_t bestMatchIndex = -1;
+    double bestMatchSSD = std::numeric_limits<double>::max();
+    for (size_t j = 0; j < keypointsR.size(); j++) {
+      const auto &kp2 = keypointsR[j];
+      cv::Point2f pos2 = kp2.pt;
+
+      if (pos2.x < border || pos2.y < border ||
+          pos2.x + border >= image2.cols || pos2.y + border >= image2.rows) {
+        continue;
+      }
+
+      cv::Mat patch2 = image2(
+          cv::Rect(pos2.x - border, pos2.y - border, patchSize, patchSize));
+
+      double ssd = computeSSD(patch1, patch2);
+      if (ssd < bestMatchSSD) {
+        bestMatchSSD = ssd;
+        bestMatchIndex = j;
+      }
+    }
+
+    if (bestMatchSSD < maxSSDThresh) {
+      matches.push_back(cv::DMatch(i + offset, bestMatchIndex, bestMatchSSD));
+    }
+  }
+
+  return matches;
+}

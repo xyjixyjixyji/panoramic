@@ -2,6 +2,10 @@
 #include <random>
 #include <ransac.hpp>
 
+SeqRansacHomographyCalculator::SeqRansacHomographyCalculator(
+    RansacOptions options)
+    : options_(options) {}
+
 // H maps points from image 1 to image 2
 cv::Mat SeqRansacHomographyCalculator::computeHomography(
     std::vector<cv::KeyPoint> &keypoints1,

@@ -4,13 +4,14 @@
 #include "warp.hpp"
 
 #include <argparse/argparse.hpp>
+#include <mpi.h>
 #include <optional>
 #include <stdexcept>
 
 // --detector
-const std::string SeqHarrisDetector = "seqHarris";
-const std::string OpenCVHarrisDetector = "OpenCVHarris";
-const std::string OpenCVSift = "OpenCVSift";
+const std::string SeqHarrisDetector = "seq";
+const std::string OpenCVHarrisDetector = "ocv";
+const std::string MPIHarrisDetector = "mpi";
 
 // --warp
 const std::string SeqWarp = "seq";
@@ -121,16 +122,19 @@ struct PanoramicOptions {
   std::vector<std::string> imgPaths_;
   warpFunction_t warpFunction_;
 
+  bool use_mpi_;
+  int nproc_; // MPI Only
+  int pid_;   // MPI Only
+
   PanoramicOptions(argparse::ArgumentParser &args) {
     auto detectorType = args.get<std::string>("--detector");
     imgPaths_ = args.get<std::vector<std::string>>("--img");
 
+    detOptions_.harrisOptions_ = std::make_optional(HarrisCornerOptions(args));
     detOptions_.detectorType_ = detectorType;
-    // opencv sift has no options
-    if (detectorType == SeqHarrisDetector ||
-        detectorType == OpenCVHarrisDetector) {
-      detOptions_.harrisOptions_ =
-          std::make_optional(HarrisCornerOptions(args));
+    use_mpi_ = false;
+    if (detectorType == MPIHarrisDetector) {
+      use_mpi_ = true;
     }
 
     ransacOptions_ = RansacOptions(args);
@@ -143,6 +147,13 @@ struct PanoramicOptions {
     } else {
       throw std::runtime_error("Unsupported warp function");
     }
+
+    // if we are using mpi, we are going to init ourselves
+    if (use_mpi_) {
+      MPI_Init(NULL, NULL);
+      MPI_Comm_size(MPI_COMM_WORLD, &nproc_);
+      MPI_Comm_rank(MPI_COMM_WORLD, &pid_);
+    }
   }
 
   static PanoramicOptions getRuntimeOptions(int argc, char **argv) {
@@ -154,8 +165,7 @@ struct PanoramicOptions {
         .required();
 
     args.add_argument("--detector")
-        .help("The type of feature detector to use: seqHarris | OpenCVHarris | "
-              "OpenCVSift | ...")
+        .help("The type of feature detector to use: seq | ocv | mpi | ...")
         .default_value(SeqHarrisDetector);
 
     args.add_argument("--ransac")

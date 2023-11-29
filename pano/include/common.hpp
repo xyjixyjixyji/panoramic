@@ -20,4 +20,19 @@ double computeSSD(const cv::Mat &input1, const cv::Mat &input2);
 cv::Mat stitchAllSequential(std::vector<cv::Mat> images,
                             PanoramicOptions options);
 
+std::vector<cv::KeyPoint>
+seqHarrisCornerDetectorDetect(const cv::Mat &image,
+                              HarrisCornerOptions options);
+
+std::vector<cv::DMatch>
+seqHarrisMatchKeyPoints(std::vector<cv::KeyPoint> keypointsL,
+                        std::vector<cv::KeyPoint> keypointsR,
+                        const cv::Mat &image1, const cv::Mat &image2,
+                        const HarrisCornerOptions options, int offset);
+
+inline void panic(const char *msg) {
+  printf("%s\n", msg);
+  exit(1);
+}
+
 #endif

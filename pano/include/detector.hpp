@@ -9,6 +9,7 @@
 class FeatureDetector {
 public:
   virtual std::vector<cv::KeyPoint> detect(const cv::Mat &image) = 0;
+
   virtual ~FeatureDetector() {}
 };
 
@@ -17,14 +18,9 @@ private:
   const HarrisCornerOptions options_;
 
 public:
-  SeqHarrisCornerDetector(HarrisCornerOptions options) : options_(options) {}
+  SeqHarrisCornerDetector(HarrisCornerOptions options);
 
   std::vector<cv::KeyPoint> detect(const cv::Mat &image) override;
-
-  static std::unique_ptr<FeatureDetector>
-  createDetector(HarrisCornerOptions options) {
-    return std::make_unique<SeqHarrisCornerDetector>(options);
-  }
 };
 
 class OcvHarrisCornerDetector : public FeatureDetector {
@@ -32,25 +28,21 @@ private:
   const HarrisCornerOptions options_;
 
 public:
-  OcvHarrisCornerDetector(HarrisCornerOptions options) : options_(options) {}
+  OcvHarrisCornerDetector(HarrisCornerOptions options);
 
   std::vector<cv::KeyPoint> detect(const cv::Mat &image) override;
-
-  static std::unique_ptr<FeatureDetector>
-  createDetector(HarrisCornerOptions options) {
-    return std::make_unique<OcvHarrisCornerDetector>(options);
-  }
 };
 
-class OcvSiftDetector : public FeatureDetector {
+class MPIHarrisCornerDetector : public FeatureDetector {
+private:
+  const HarrisCornerOptions options_;
+  const int nproc_;
+  const int pid_;
+
 public:
-  OcvSiftDetector() {}
+  MPIHarrisCornerDetector(HarrisCornerOptions options, int pid, int nproc);
 
   std::vector<cv::KeyPoint> detect(const cv::Mat &image) override;
-
-  static std::unique_ptr<FeatureDetector> createDetector() {
-    return std::make_unique<OcvSiftDetector>();
-  }
 };
 
 #endif

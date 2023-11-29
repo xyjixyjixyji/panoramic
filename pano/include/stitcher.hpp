@@ -1,17 +1,19 @@
 #ifndef PANO_STITCHER_HPP
 #define PANO_STITCHER_HPP
 
-#include "matcher.hpp"
-#include "options.hpp"
-#include "ransac.hpp"
-#include "warp.hpp"
+#include <cassert>
+#include <common.hpp>
+#include <detector.hpp>
+#include <matcher.hpp>
+#include <options.hpp>
+#include <ransac.hpp>
+#include <warp.hpp>
 
+#include <memory>
 #include <opencv2/core/mat.hpp>
 #include <opencv2/opencv.hpp>
 
 #include <vector>
-
-#include <detector.hpp>
 
 /**
  * @brief Stitcher is the class that stitches two images together to form a
@@ -36,35 +38,41 @@ public:
    * @param image1
    * @param image2
    */
-  Stitcher(cv::Mat image1, cv::Mat image2, PanoramicOptions options) {
+  Stitcher(cv::Mat image1, cv::Mat image2, PanoramicOptions options)
+      : options_(options) {
     imageL_ = image1;
     imageR_ = image2;
     auto detOptions = options.detOptions_;
     auto ransacOptions = options.ransacOptions_;
 
     if (detOptions.detectorType_ == SeqHarrisDetector) {
-      detector_ = SeqHarrisCornerDetector::createDetector(
-          detOptions.harrisOptions_.value());
-      matcher_ = SeqHarrisKeyPointMatcher::createMatcher(
+      detector_ = std::make_unique<SeqHarrisCornerDetector>(
+          SeqHarrisCornerDetector(detOptions.harrisOptions_.value()));
+      matcher_ = std::make_unique<SeqHarrisKeyPointMatcher>(
           imageL_, imageR_, detOptions.harrisOptions_.value());
     } else if (detOptions.detectorType_ == OpenCVHarrisDetector) {
-      detector_ = OcvHarrisCornerDetector::createDetector(
-          detOptions.harrisOptions_.value());
-      matcher_ = OcvHarrisKeypointMatcher::createMatcher(imageL_, imageR_);
-    } else if (detOptions.detectorType_ == OpenCVSift) {
-      detector_ = OcvSiftDetector::createDetector();
-      matcher_ = OcvSiftKeypointMatcher::createMatcher(imageL_, imageR_);
+      detector_ = std::make_unique<OcvHarrisCornerDetector>(
+          OcvHarrisCornerDetector(detOptions.harrisOptions_.value()));
+      matcher_ = std::make_unique<OcvHarrisKeypointMatcher>(imageL_, imageR_);
+    } else if (detOptions.detectorType_ == MPIHarrisDetector) {
+      detector_ = std::make_unique<MPIHarrisCornerDetector>(
+          detOptions.harrisOptions_.value(), options.pid_, options.nproc_);
+      matcher_ = std::make_unique<MPIHarrisKeypointMatcher>(
+          imageL_, imageR_, detOptions.harrisOptions_.value(), options.pid_,
+          options.nproc_);
+    } else {
+      panic("Invalid detector type!");
     }
 
     if (options.ransacOptions_.ransacType_ == SeqRansac) {
       homographyCalculator_ =
-          SeqRansacHomographyCalculator::createHomographyCalculator(
-              ransacOptions);
+          std::make_unique<SeqRansacHomographyCalculator>(ransacOptions);
     } else if (options.ransacOptions_.ransacType_ == OcvRansac) {
       homographyCalculator_ =
-          OcvRansacHomographyCalculator::createHomographyCalculator(
-              ransacOptions);
+          std::make_unique<OcvRansacHomographyCalculator>(ransacOptions);
     }
+
+    warpFunction_ = options.warpFunction_;
   }
 
   /**
@@ -82,6 +90,8 @@ public:
   }
 
 private:
+  // options
+  PanoramicOptions options_;
   // feature detector
   std::unique_ptr<FeatureDetector> detector_;
   // matcher
