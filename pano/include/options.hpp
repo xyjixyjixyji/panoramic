@@ -131,6 +131,7 @@ struct PanoramicOptions {
     imgPaths_ = args.get<std::vector<std::string>>("--img");
 
     detOptions_.harrisOptions_ = std::make_optional(HarrisCornerOptions(args));
+    detOptions_.detectorType_ = detectorType;
     use_mpi_ = false;
     if (detectorType == MPIHarrisDetector) {
       use_mpi_ = true;

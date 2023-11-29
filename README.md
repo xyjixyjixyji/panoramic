@@ -8,7 +8,7 @@ NOTE(FIXME): sometimes segfault will happen, just rerun the program
 
 ```shell
 > make build
-> ./build/pano_cmd --detector seqHarris --ransac ocv --warp ocv --img ./data/viewL.png --img ./data/viewR.png
+> ./build/pano_cmd --detector seq --ransac ocv --warp ocv --img ./data/viewL.png --img ./data/viewR.png
 ```
 
 ## Usage
