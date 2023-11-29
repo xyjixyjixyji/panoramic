@@ -47,8 +47,7 @@ public:
     auto duration =
         std::chrono::duration<double, std::milli>(end - start_).count();
     if (shouldPrint_) {
-      std::cout << message_ << ": " << std::fixed << std::setprecision(2)
-                << duration << " ms\n";
+      printf("%-40s %-10.2f ms\n", message_.c_str(), duration);
     }
   }
 
