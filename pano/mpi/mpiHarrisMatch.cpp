@@ -1,6 +1,7 @@
 #include <common.hpp>
 #include <limits>
 #include <matcher.hpp>
+#include <mpi.h>
 #include <numeric>
 #include <opencv2/core/types.hpp>
 #include <vector>
@@ -44,17 +45,22 @@ MPIHarrisKeypointMatcher::matchKeyPoints(std::vector<cv::KeyPoint> keypointsL,
   // Calculate total matches and displacements for gathering
   int totalMatches = std::accumulate(matchCounts.begin(), matchCounts.end(), 0);
 
-  std::vector<int> displ(nproc_);
-  displ[0] = 0;
+  // Calculate displacements in bytes
+  std::vector<int> byteCounts(nproc_);
+  for (int i = 0; i < nproc_; ++i) {
+    byteCounts[i] = matchCounts[i] * sizeof(cv::DMatch);
+  }
+  std::vector<int> byteDispl(nproc_);
+  byteDispl[0] = 0;
   for (int i = 1; i < nproc_; ++i) {
-    displ[i] = displ[i - 1] + matchCounts[i - 1];
+    byteDispl[i] = byteDispl[i - 1] + byteCounts[i - 1];
   }
 
   // Gather all matches
   std::vector<cv::DMatch> allMatches(totalMatches);
   MPI_Allgatherv(localMatches.data(), localMatchCount * sizeof(cv::DMatch),
-                 MPI_BYTE, allMatches.data(), matchCounts.data(), displ.data(),
-                 MPI_BYTE, MPI_COMM_WORLD);
+                 MPI_BYTE, allMatches.data(), byteCounts.data(),
+                 byteDispl.data(), MPI_BYTE, MPI_COMM_WORLD);
 
   return allMatches;
 }

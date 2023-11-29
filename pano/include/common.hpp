@@ -30,4 +30,9 @@ seqHarrisMatchKeyPoints(std::vector<cv::KeyPoint> keypointsL,
                         const cv::Mat &image1, const cv::Mat &image2,
                         const HarrisCornerOptions options);
 
+inline void panic(const char *msg) {
+  printf("%s\n", msg);
+  exit(1);
+}
+
 #endif

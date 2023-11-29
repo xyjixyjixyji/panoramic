@@ -2,6 +2,7 @@
 #define PANO_STITCHER_HPP
 
 #include <cassert>
+#include <common.hpp>
 #include <detector.hpp>
 #include <matcher.hpp>
 #include <options.hpp>
@@ -59,9 +60,7 @@ public:
           imageL_, imageR_, detOptions.harrisOptions_.value(), options.pid_,
           options.nproc_);
     } else {
-      std::cout << "Invalid detector type " << detOptions.detectorType_ << "!"
-                << std::endl;
-      exit(1);
+      panic("Invalid detector type!");
     }
 
     if (options.ransacOptions_.ransacType_ == SeqRansac) {

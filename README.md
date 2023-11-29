@@ -7,8 +7,12 @@ Parallel Panoramic Image Stitching
 NOTE(FIXME): sometimes segfault will happen, just rerun the program
 
 ```shell
+# For regular runs
 > make build
 > ./build/pano_cmd --detector seq --ransac ocv --warp ocv --img ./data/viewL.png --img ./data/viewR.png
+
+# For mpi runs
+> mpirun -n 1 ./build/pano_cmd --detector mpi --ransac seq --warp seq --img ./data/viewL.png --img ./data/viewR.png
 ```
 
 ## Usage

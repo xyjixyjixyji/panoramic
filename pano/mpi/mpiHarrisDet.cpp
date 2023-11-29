@@ -6,6 +6,9 @@ MPIHarrisCornerDetector::MPIHarrisCornerDetector(HarrisCornerOptions options,
                                                  int pid, int nproc)
     : options_(options), nproc_(nproc), pid_(pid) {}
 
+// FIXME: we can certainly avoid the Allgather and Allgatherv
+//        by letting each thread holds a vector of keypoints
+//        and match them with the keypoints from other threads
 std::vector<cv::KeyPoint>
 MPIHarrisCornerDetector::detect(const cv::Mat &image) {
   int rows_per_process = image.rows / nproc_;
@@ -32,49 +35,22 @@ MPIHarrisCornerDetector::detect(const cv::Mat &image) {
       std::accumulate(keypointNums.begin(), keypointNums.end(), 0);
   std::vector<cv::KeyPoint> allKeypoints(totalKeypoints);
 
-  // Calculate displacements for MPI_Allgatherv
-  std::vector<int> displ(nproc_);
-  displ[0] = 0;
+  // Calculate displacements in bytes
+  std::vector<int> byteCounts(nproc_);
+  for (int i = 0; i < nproc_; ++i) {
+    byteCounts[i] = keypointNums[i] * sizeof(cv::KeyPoint);
+  }
+  std::vector<int> byteDispl(nproc_);
+  byteDispl[0] = 0;
   for (int i = 1; i < nproc_; ++i) {
-    displ[i] = displ[i - 1] + keypointNums[i - 1];
+    byteDispl[i] = byteDispl[i - 1] + byteCounts[i - 1];
   }
 
   // Use MPI_Allgatherv to gather keypoints from all processes
   MPI_Allgatherv(localKeypoints.data(),
                  localNumKeypoints * sizeof(cv::KeyPoint), MPI_BYTE,
-                 allKeypoints.data(), keypointNums.data(), displ.data(),
+                 allKeypoints.data(), byteCounts.data(), byteDispl.data(),
                  MPI_BYTE, MPI_COMM_WORLD);
 
   return allKeypoints;
-
-  // TODO: prevent all gatherv
-  // // Gather the number of keypoints detected by each process
-  // std::vector<int> keypointNums(nproc_);
-  // int localNumKeypoints = static_cast<int>(localKeypoints.size());
-  // MPI_Gather(&localNumKeypoints, 1, MPI_INT, keypointNums.data(), 1, MPI_INT,
-  // 0,
-  //            MPI_COMM_WORLD);
-
-  // // Gather all keypoints from all processes
-  // std::vector<cv::KeyPoint> allKeypoints;
-  // if (pid_ == 0) {
-  //   // Only the root process needs to allocate space for all keypoints
-  //   int totalKeypoints =
-  //       std::accumulate(keypointNums.begin(), keypointNums.end(), 0);
-  //   allKeypoints.resize(totalKeypoints);
-  // }
-
-  // // calculate displacement
-  // std::vector<int> displ(nproc_);
-  // displ[0] = 0; // The first displacement is always 0
-  // for (int i = 1; i < nproc_; ++i) {
-  //   displ[i] = displ[i - 1] + keypointNums[i - 1];
-  // }
-
-  // MPI_Gatherv(localKeypoints.data(), localNumKeypoints *
-  // sizeof(cv::KeyPoint),
-  //             MPI_BYTE, allKeypoints.data(), keypointNums.data(),
-  //             displ.data(), MPI_BYTE, 0, MPI_COMM_WORLD);
-
-  // return allKeypoints;
 }
