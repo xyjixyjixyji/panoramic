@@ -71,6 +71,8 @@ public:
       homographyCalculator_ =
           std::make_unique<OcvRansacHomographyCalculator>(ransacOptions);
     }
+
+    warpFunction_ = options.warpFunction_;
   }
 
   /**

@@ -186,7 +186,7 @@ std::vector<cv::DMatch>
 seqHarrisMatchKeyPoints(std::vector<cv::KeyPoint> keypointsL,
                         std::vector<cv::KeyPoint> keypointsR,
                         const cv::Mat &image1, const cv::Mat &image2,
-                        const HarrisCornerOptions options) {
+                        const HarrisCornerOptions options, int offset) {
   // options
   const int patchSize = options.patchSize_;
   const double maxSSDThresh = options.maxSSDThresh_;
@@ -228,7 +228,7 @@ seqHarrisMatchKeyPoints(std::vector<cv::KeyPoint> keypointsL,
     }
 
     if (bestMatchSSD < maxSSDThresh) {
-      matches.push_back(cv::DMatch(i, bestMatchIndex, bestMatchSSD));
+      matches.push_back(cv::DMatch(i + offset, bestMatchIndex, bestMatchSSD));
     }
   }
 

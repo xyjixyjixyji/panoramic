@@ -34,7 +34,7 @@ MPIHarrisKeypointMatcher::matchKeyPoints(std::vector<cv::KeyPoint> keypointsL,
 
   // Perform local matching
   std::vector<cv::DMatch> localMatches = seqHarrisMatchKeyPoints(
-      localKeypointsL, keypointsR, image1_, image2_, options_);
+      localKeypointsL, keypointsR, image1_, image2_, options_, startIdx);
 
   // Gather the number of matches from each process
   std::vector<int> matchCounts(nproc_);

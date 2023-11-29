@@ -51,9 +51,6 @@ MPIHarrisCornerDetector::detect(const cv::Mat &image) {
     byteDispl[i] = byteDispl[i - 1] + byteCounts[i - 1];
   }
 
-  printf("[pid:%d/%d] localNumKeypoints: %d\n", pid_, nproc_,
-         localNumKeypoints);
-
   // Use MPI_Allgatherv to gather keypoints from all processes
   MPI_Allgatherv(localKeypoints.data(),
                  localNumKeypoints * sizeof(cv::KeyPoint), MPI_BYTE,

@@ -20,5 +20,5 @@ std::vector<cv::DMatch>
 SeqHarrisKeyPointMatcher::matchKeyPoints(std::vector<cv::KeyPoint> keypointsL,
                                          std::vector<cv::KeyPoint> keypointsR) {
   return seqHarrisMatchKeyPoints(keypointsL, keypointsR, image1_, image2_,
-                                 options_);
+                                 options_, 0);
 }
