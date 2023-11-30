@@ -122,9 +122,9 @@ struct PanoramicOptions {
   std::vector<std::string> imgPaths_;
   warpFunction_t warpFunction_;
 
-  bool use_mpi_;
-  int nproc_; // MPI Only
-  int pid_;   // MPI Only
+  bool use_mpi_; // MPI Only
+  int nproc_;    // MPI Only
+  int pid_;      // MPI Only
 
   PanoramicOptions(argparse::ArgumentParser &args) {
     auto detectorType = args.get<std::string>("--detector");

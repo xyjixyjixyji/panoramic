@@ -70,6 +70,8 @@ public:
     } else if (options.ransacOptions_.ransacType_ == OcvRansac) {
       homographyCalculator_ =
           std::make_unique<OcvRansacHomographyCalculator>(ransacOptions);
+    } else {
+      panic("Invalid ransac type!");
     }
 
     warpFunction_ = options.warpFunction_;

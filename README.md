@@ -4,7 +4,7 @@ Parallel Panoramic Image Stitching
 
 ## Example Run
 
-NOTE(FIXME): sometimes segfault will happen, just rerun the program
+NOTE: on macOS, run `export TMPDIR=/tmp` to avoid unlink syscall failure
 
 ```shell
 # For regular runs
