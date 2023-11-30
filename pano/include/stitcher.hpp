@@ -60,6 +60,11 @@ public:
       matcher_ = std::make_unique<MPIHarrisKeypointMatcher>(
           imageL_, imageR_, detOptions.harrisOptions_.value(), options.pid_,
           options.nproc_);
+    } else if (detOptions.detectorType_ == OmpHarrisDetector) {
+      detector_ = std::make_unique<OmpHarrisCornerDetector>(
+        detOptions.harrisOptions_.value(), options.nproc_);
+      matcher_ = std::make_unique<OmpHarrisKeypointMatcher>(
+        imageL_, imageR_, detOptions.harrisOptions_.value(), options.nproc_);
     } else {
       panic("Invalid detector type!");
     }

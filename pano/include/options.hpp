@@ -12,6 +12,7 @@
 const std::string SeqHarrisDetector = "seq";
 const std::string OpenCVHarrisDetector = "ocv";
 const std::string MPIHarrisDetector = "mpi";
+const std::string OmpHarrisDetector = "omp";
 
 // --warp
 const std::string SeqWarp = "seq";
