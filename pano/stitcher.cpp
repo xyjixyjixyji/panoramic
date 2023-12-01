@@ -12,8 +12,6 @@ cv::Mat Stitcher::stitch() {
     printf("========== %-20s ==========\n", "Stitching");
   }
 
-  Timer e2eTimer("End to end time to stitch", shouldPrint);
-
   std::vector<cv::KeyPoint> keypointsL;
   {
     Timer timer("Time to detect first keypoints", shouldPrint);
