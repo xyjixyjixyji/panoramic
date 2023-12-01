@@ -15,7 +15,8 @@ cv::Mat OcvRansacHomographyCalculator::computeHomography(
     ptsR.push_back(keypointsR[match.trainIdx].pt);
   }
 
-  H = cv::findHomography(ptsL, ptsR, cv::RANSAC, options_.distanceThreshold_);
+  H = cv::findHomography(ptsL, ptsR, cv::RANSAC, options_.distanceThreshold_,
+                         cv::noArray(), options_.numIterations_, 0.995);
 
   return H;
 }
