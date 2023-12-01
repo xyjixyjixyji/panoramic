@@ -4,15 +4,19 @@ Parallel Panoramic Image Stitching
 
 ## Example Run
 
-NOTE: on macOS, run `export TMPDIR=/tmp` to avoid unlink syscall failure
+! NOTE: opencv only supports two image stitching, our mpi/omp/cuda/seq supports any number of image stitching
+! NOTE: on macOS, run `export TMPDIR=/tmp` to avoid unlink syscall failure
 
 ```shell
 # For regular runs
 > make build
 > ./build/pano_cmd --detector seq --ransac ocv --warp ocv --img ./data/viewL.png --img ./data/viewR.png
 
+# For multiple images
+> ./build/pano_cmd --detector seq --ransac ocv --warp ocv --img ./data/v1.png --img ./data/v2.png --img ./data/v3.png --img ./data/v4.png
+
 # For mpi runs
-> mpirun -n 1 ./build/pano_cmd --detector mpi --ransac seq --warp seq --img ./data/viewL.png --img ./data/viewR.png
+> mpirun -n 1 ./build/pano_cmd --detector mpi --ransac ocv --warp ocv --img ./data/viewL.png --img ./data/viewR.png
 ```
 
 ## Usage
