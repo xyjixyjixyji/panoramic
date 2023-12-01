@@ -46,6 +46,9 @@ cv::Mat Stitcher::stitch() {
   }
 
   if (shouldPrint) {
+    printf("%ld keypoints detected in image L\n", keypointsL.size());
+    printf("%ld keypoints detected in image R\n", keypointsR.size());
+    printf("%ld matches found\n", matches.size());
     printf("========== %-20s ==========\n", "Done");
   }
 

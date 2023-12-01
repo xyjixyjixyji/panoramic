@@ -1,6 +1,8 @@
 #include <detector.hpp>
 #include <opencv2/imgproc.hpp>
 
+const float normalThresh = 0.05;
+
 OcvHarrisCornerDetector::OcvHarrisCornerDetector(HarrisCornerOptions options)
     : options_(options) {}
 
@@ -16,38 +18,44 @@ OcvHarrisCornerDetector::detect(const cv::Mat &image) {
     grayImage = image;
   }
 
+  // Detecting Harris corners
   cv::Mat dst, dst_norm, dst_norm_scaled;
-  dst = cv::Mat::zeros(image.size(), CV_32FC1);
-
-  // Detecting corners
-  cv::cornerHarris(grayImage, dst, 3, 3, options_.k_);
+  dst = cv::Mat::zeros(grayImage.size(), CV_32FC1);
+  cv::cornerHarris(grayImage, dst, options_.patchSize_, 3, options_.k_);
 
   // Normalizing
-  cv::normalize(dst, dst_norm, 0, 255, cv::NORM_MINMAX, CV_32FC1);
+  cv::normalize(dst, dst_norm, 0, 255, cv::NORM_MINMAX, CV_32FC1, cv::Mat());
   cv::convertScaleAbs(dst_norm, dst_norm_scaled);
 
-  // Locating and adding keypoints
-  double thresh = 0.15; // Threshold for detecting corners
-  int nmsBlockSize = options_.nmsNeighborhood_;
-  for (int i = nmsBlockSize; i < dst_norm.rows - nmsBlockSize; i++) {
-    for (int j = nmsBlockSize; j < dst_norm.cols - nmsBlockSize; j++) {
-      if (dst_norm.at<float>(i, j) > thresh * 255) {
-        bool isLocalMax = true;
+  // Drawing a circle around corners
+  const int nmsRadius = options_.nmsNeighborhood_ / 2;
+  for (int i = 0; i < dst_norm.rows; i++) {
+    for (int j = 0; j < dst_norm.cols; j++) {
+      if (rand() % 100 < 90)
+        continue;
 
-        // Check if this corner is the local maximum in its neighborhood
-        for (int dy = -nmsBlockSize; dy <= nmsBlockSize; dy++) {
-          for (int dx = -nmsBlockSize; dx <= nmsBlockSize; dx++) {
-            if (dst_norm.at<float>(i + dy, j + dx) > dst_norm.at<float>(i, j)) {
-              isLocalMax = false;
-              break;
+      float value = dst_norm.at<float>(i, j);
+      if (value > normalThresh * 255) {
+        // Check for the local maximum in the neighborhood
+        bool localMax = true;
+        for (int dx = -nmsRadius; dx <= nmsRadius; dx++) {
+          for (int dy = -nmsRadius; dy <= nmsRadius; dy++) {
+            int x = j + dx;
+            int y = i + dy;
+            if (x >= 0 && y >= 0 && x < dst_norm.cols && y < dst_norm.rows) {
+              if (dst_norm.at<float>(y, x) > value) {
+                localMax = false;
+                break;
+              }
             }
           }
-          if (!isLocalMax)
+          if (!localMax) {
             break;
+          }
         }
-
-        if (isLocalMax) {
-          keypoints.push_back(cv::KeyPoint(float(j), float(i), 1.f));
+        if (localMax) {
+          keypoints.push_back(
+              cv::KeyPoint(static_cast<float>(j), static_cast<float>(i), 1));
         }
       }
     }
