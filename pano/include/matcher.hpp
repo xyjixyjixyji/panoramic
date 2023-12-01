@@ -71,12 +71,11 @@ private:
   const cv::Mat &image1_;
   const cv::Mat &image2_;
   const HarrisCornerOptions options_;
-  const int nproc_;
 
 public:
   // Initialize the matcher with two images and their keypoints
   OmpHarrisKeypointMatcher(cv::Mat &image1, cv::Mat &image2,
-                           HarrisCornerOptions options, int nproc);
+                           HarrisCornerOptions options);
 
   // Match keypoints detected by Harris corner detector
   std::vector<cv::DMatch>

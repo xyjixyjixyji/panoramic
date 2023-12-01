@@ -62,9 +62,9 @@ public:
           options.nproc_);
     } else if (detOptions.detectorType_ == OmpHarrisDetector) {
       detector_ = std::make_unique<OmpHarrisCornerDetector>(
-        detOptions.harrisOptions_.value(), options.nproc_);
+        detOptions.harrisOptions_.value());
       matcher_ = std::make_unique<OmpHarrisKeypointMatcher>(
-        imageL_, imageR_, detOptions.harrisOptions_.value(), options.nproc_);
+        imageL_, imageR_, detOptions.harrisOptions_.value());
     } else {
       panic("Invalid detector type!");
     }

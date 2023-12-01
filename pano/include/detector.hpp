@@ -36,10 +36,9 @@ public:
 class OmpHarrisCornerDetector : public FeatureDetector {
 private:
   const HarrisCornerOptions options_;
-  const int nproc_;
 
 public:
-  OmpHarrisCornerDetector(HarrisCornerOptions options, int nproc);
+  OmpHarrisCornerDetector(HarrisCornerOptions options);
 
   std::vector<cv::KeyPoint> detect(const cv::Mat &image) override;
 };

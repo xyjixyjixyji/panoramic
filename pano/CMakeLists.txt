@@ -6,6 +6,10 @@ include_directories(${MPI_INCLUDE_PATH})
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
+# OpenMP
+find_package(OpenMP REQUIRED)
+include_directories(${OpenMP_INCLUDE_DIRS})
+
 # static library
 add_library(pano STATIC)
 target_sources(pano PRIVATE stitcher.cpp common.cpp)
@@ -14,6 +18,7 @@ target_sources(pano PRIVATE stitcher.cpp common.cpp)
 target_link_libraries(pano PRIVATE argparse)
 target_link_libraries(pano PUBLIC ${OpenCV_LIBS})
 target_link_libraries(pano PUBLIC MPI::MPI_CXX)
+target_link_libraries(pano PUBLIC OpenMP::OpenMP_CXX)
 
 target_include_directories(pano PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
