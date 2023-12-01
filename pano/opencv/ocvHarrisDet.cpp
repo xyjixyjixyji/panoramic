@@ -31,9 +31,6 @@ OcvHarrisCornerDetector::detect(const cv::Mat &image) {
   const int nmsRadius = options_.nmsNeighborhood_ / 2;
   for (int i = 0; i < dst_norm.rows; i++) {
     for (int j = 0; j < dst_norm.cols; j++) {
-      if (rand() % 100 < 90)
-        continue;
-
       float value = dst_norm.at<float>(i, j);
       if (value > normalThresh * 255) {
         // Check for the local maximum in the neighborhood
