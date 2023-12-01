@@ -5,7 +5,8 @@ Members: Xinyou Ji(xinyouj), Zihe Zhao(zihezhao)
 
 ---
 
-[toc]
+* TOC
+{:toc}
 
 ---
 
