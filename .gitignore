@@ -40,4 +40,5 @@ build/
 *.out
 *.app
 
-*.png
+Warped.png
+
