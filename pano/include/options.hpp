@@ -20,6 +20,7 @@ const std::string OcvWarp = "ocv";
 const std::string SeqRansac = "seq";
 const std::string OcvRansac = "ocv";
 const std::string MPIRansac = "mpi";
+const std::string OmpRansac = "omp";
 
 struct HarrisCornerOptions {
   // Smaller k leads to more sensitive detection
