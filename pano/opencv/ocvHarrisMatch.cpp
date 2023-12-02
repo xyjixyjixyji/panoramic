@@ -1,4 +1,5 @@
-#include "matcher.hpp"
+#include <matcher.hpp>
+#include <opencv2/features2d.hpp>
 
 OcvHarrisKeypointMatcher::OcvHarrisKeypointMatcher(cv::Mat &imageL,
                                                    cv::Mat &imageR)

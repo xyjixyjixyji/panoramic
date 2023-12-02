@@ -7,7 +7,6 @@
 #include <matcher.hpp>
 #include <options.hpp>
 #include <ransac.hpp>
-#include <warp.hpp>
 
 #include <memory>
 #include <opencv2/core/mat.hpp>
@@ -70,11 +69,12 @@ public:
     } else if (options.ransacOptions_.ransacType_ == OcvRansac) {
       homographyCalculator_ =
           std::make_unique<OcvRansacHomographyCalculator>(ransacOptions);
+    } else if (options.ransacOptions_.ransacType_ == MPIRansac) {
+      homographyCalculator_ = std::make_unique<MPIRansacHomographyCalculator>(
+          ransacOptions, options.pid_, options.nproc_);
     } else {
       panic("Invalid ransac type!");
     }
-
-    warpFunction_ = options.warpFunction_;
   }
 
   /**
@@ -100,8 +100,6 @@ private:
   std::unique_ptr<KeyPointMatcher> matcher_;
   // homography calculator
   std::unique_ptr<RansacHomographyCalculator> homographyCalculator_;
-  // warp function
-  warpFunction_t warpFunction_;
 
   // we have two images to be stitched
   cv::Mat imageL_;

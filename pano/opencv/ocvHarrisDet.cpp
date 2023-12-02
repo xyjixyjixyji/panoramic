@@ -1,4 +1,6 @@
 #include <detector.hpp>
+#include <opencv2/calib3d.hpp>
+#include <opencv2/features2d.hpp>
 #include <opencv2/imgproc.hpp>
 
 const float normalThresh = 0.05;

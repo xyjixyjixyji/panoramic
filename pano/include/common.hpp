@@ -2,6 +2,7 @@
 #define PANO_COMMON_HPP
 
 #include <cassert>
+#include <chrono>
 #include <opencv2/core/mat.hpp>
 #include <options.hpp>
 #include <vector>

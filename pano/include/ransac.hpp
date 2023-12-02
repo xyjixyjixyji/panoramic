@@ -46,4 +46,22 @@ public:
                             std::vector<cv::DMatch> &matches) override;
 };
 
+class MPIRansacHomographyCalculator : public RansacHomographyCalculator {
+private:
+  std::vector<cv::KeyPoint> keypoints1_;
+  std::vector<cv::KeyPoint> keypoints2_;
+  std::vector<cv::DMatch> matches_; // kp1 -> kp2
+  RansacOptions options_;
+  int pid_;
+  int nproc_;
+
+public:
+  MPIRansacHomographyCalculator(RansacOptions options, int pid, int nproc);
+
+  // compute the homography matrix
+  cv::Mat computeHomography(std::vector<cv::KeyPoint> &keypoints1,
+                            std::vector<cv::KeyPoint> &keypoints2,
+                            std::vector<cv::DMatch> &matches) override;
+};
+
 #endif
