@@ -7,6 +7,5 @@
 #include <options.hpp>
 #include <ransac.hpp>
 #include <stitcher.hpp>
-#include <warp.hpp>
 
 #endif

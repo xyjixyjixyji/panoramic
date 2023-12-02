@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
     toWarped.push_back(img);
   }
 
-  cv::Mat warped = stitchAllSequential(toWarped, options);
+  cv::Mat warped = timedStitchAllSequential(toWarped, options);
 
   if (options.use_mpi_) {
     if (options.pid_ == 0) {

@@ -1,8 +1,6 @@
 #ifndef PANO_OPTIONS_HPP
 #define PANO_OPTIONS_HPP
 
-#include "warp.hpp"
-
 #include <argparse/argparse.hpp>
 #include <mpi.h>
 #include <optional>
@@ -21,6 +19,7 @@ const std::string OcvWarp = "ocv";
 // --ransac
 const std::string SeqRansac = "seq";
 const std::string OcvRansac = "ocv";
+const std::string MPIRansac = "mpi";
 
 struct HarrisCornerOptions {
   // Smaller k leads to more sensitive detection
@@ -121,7 +120,6 @@ struct PanoramicOptions {
   DetectorOptions detOptions_;
   RansacOptions ransacOptions_;
   std::vector<std::string> imgPaths_;
-  warpFunction_t warpFunction_;
 
   bool use_mpi_; // MPI Only
   int nproc_;    // MPI Only
@@ -139,15 +137,6 @@ struct PanoramicOptions {
     }
 
     ransacOptions_ = RansacOptions(args);
-
-    auto warpType = args.get<std::string>("--warp");
-    if (warpType == SeqWarp) {
-      warpFunction_ = warpSequential;
-    } else if (warpType == OcvWarp) {
-      warpFunction_ = warpOcv;
-    } else {
-      throw std::runtime_error("Unsupported warp function");
-    }
 
     // if we are using mpi, we are going to init ourselves
     if (use_mpi_) {
@@ -170,12 +159,8 @@ struct PanoramicOptions {
         .default_value(SeqHarrisDetector);
 
     args.add_argument("--ransac")
-        .help("The type of RANSAC to use: seq | ocv")
+        .help("The type of RANSAC to use: seq | ocv | mpi | ...")
         .default_value(SeqRansac);
-
-    args.add_argument("--warp")
-        .help("The type of warp function to use: seq | ocv | ...")
-        .default_value("seq");
 
     // we provide all argument w/ default values so no exception will be
     // thrown

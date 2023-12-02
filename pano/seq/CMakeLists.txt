@@ -1,1 +1,1 @@
-target_sources(pano PRIVATE seqHarrisDet.cpp seqHarrisMatch.cpp seqRansac.cpp seqWarp.cpp)
+target_sources(pano PRIVATE seqHarrisDet.cpp seqHarrisMatch.cpp seqRansac.cpp)

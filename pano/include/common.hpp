@@ -2,6 +2,7 @@
 #define PANO_COMMON_HPP
 
 #include <cassert>
+#include <chrono>
 #include <opencv2/core/mat.hpp>
 #include <options.hpp>
 #include <vector>
@@ -17,8 +18,11 @@ cv::Mat convolveSequential(const cv::Mat &input,
 double computeSSD(const cv::Mat &input1, const cv::Mat &input2);
 
 // helper
-cv::Mat stitchAllSequential(std::vector<cv::Mat> images,
-                            PanoramicOptions options);
+cv::Mat __stitchAllSequential(std::vector<cv::Mat> images,
+                              PanoramicOptions options);
+
+cv::Mat timedStitchAllSequential(std::vector<cv::Mat> images,
+                                 PanoramicOptions options);
 
 std::vector<cv::KeyPoint>
 seqHarrisCornerDetectorDetect(const cv::Mat &image,

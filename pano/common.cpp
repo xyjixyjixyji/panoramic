@@ -88,8 +88,8 @@ inline cv::Mat __stitchTwo(cv::Mat imageL, cv::Mat imageR,
   return warped;
 }
 
-cv::Mat stitchAllSequential(std::vector<cv::Mat> images,
-                            PanoramicOptions options) {
+cv::Mat __stitchAllSequential(std::vector<cv::Mat> images,
+                              PanoramicOptions options) {
   if (images.size() == 1) {
     return images[0];
   }
@@ -108,7 +108,16 @@ cv::Mat stitchAllSequential(std::vector<cv::Mat> images,
     }
   }
 
-  return stitchAllSequential(toWarped, options);
+  return __stitchAllSequential(toWarped, options);
+}
+
+cv::Mat timedStitchAllSequential(std::vector<cv::Mat> images,
+                                 PanoramicOptions options) {
+  bool shouldPrint =
+      !options.use_mpi_ || (options.use_mpi_ && options.pid_ == 0);
+
+  Timer timer("Time to stitch all images", shouldPrint);
+  return __stitchAllSequential(images, options);
 }
 
 std::vector<cv::KeyPoint>

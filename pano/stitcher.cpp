@@ -1,7 +1,23 @@
-#include "options.hpp"
-#include <chrono>
 #include <common.hpp>
+#include <options.hpp>
 #include <stitcher.hpp>
+
+cv::Mat warpOcv(cv::Mat imageL, cv::Mat imageR, cv::Mat homography) {
+  // Create an output image large enough to hold both images
+  cv::Mat invH = homography.inv();
+  cv::Mat warpedImage =
+      cv::Mat::zeros(std::max(imageL.rows, imageR.rows),
+                     imageL.cols + imageR.cols, imageL.type());
+
+  // Place imageL in the left part of the output image
+  imageL.copyTo(warpedImage(cv::Rect(0, 0, imageL.cols, imageL.rows)));
+
+  // Apply the modified homography transformation to imageR
+  cv::warpPerspective(imageR, warpedImage, invH, warpedImage.size(),
+                      cv::INTER_LINEAR, cv::BORDER_TRANSPARENT);
+
+  return warpedImage;
+}
 
 //! NORMALLY DO NOT EDIT, this is a little bit messy since we are timing it
 cv::Mat Stitcher::stitch() {
@@ -11,8 +27,6 @@ cv::Mat Stitcher::stitch() {
   if (shouldPrint) {
     printf("========== %-20s ==========\n", "Stitching");
   }
-
-  Timer e2eTimer("End to end time to stitch", shouldPrint);
 
   std::vector<cv::KeyPoint> keypointsL;
   {
@@ -42,10 +56,13 @@ cv::Mat Stitcher::stitch() {
   cv::Mat warped;
   {
     Timer timer("Time to warp image", shouldPrint);
-    warped = warpFunction_(imageL_, imageR_, hMat);
+    warped = warpOcv(imageL_, imageR_, hMat);
   }
 
   if (shouldPrint) {
+    printf("%ld keypoints detected in image L\n", keypointsL.size());
+    printf("%ld keypoints detected in image R\n", keypointsR.size());
+    printf("%ld matches found\n", matches.size());
     printf("========== %-20s ==========\n", "Done");
   }
 
