@@ -17,15 +17,68 @@ Members: Xinyou Ji(xinyouj), Zihe Zhao(zihezhao)
 
 ### Future Schedule
 
+| Task                                                 | Name                  | Date        |
+| ---------------------------------------------------- | --------------------- | ----------- |
+| Polish benchmark code and scripts                    | Xinyou Ji & Zihe Zhao | 12.4-12.5   |
+| Benchmark seq/mpi/openmp/CUDA on multiple image sets | Zihe Zhao             | 12.4-12.9   |
+| Implement CUDA version                               | Xinyou Ji             | 12.6-12.8   |
+| Finish final report                                  | Xinyou Ji & Zihe Zhao | 12.9-12.12  |
+| Finish poster                                        | Xinyou Ji & Zihe Zhao | 12.12-12.14 |
+
 ### Current Progress
+
+We decide to implement our panoramic pipeline with **HarrisCornerDetector** + **RANSAC** homography matrix search.
+
+Current code is shown [here](https://github.com/Ji-Xinyou/panoramic).
+
+- We have implemented the sequential version of the pipeline
+- We have implemented the MPI version of the pipeline
+- We have implemented the OpenMP version of the pipeline
+- We have implemented the pipeline using OpenCV as well for reference
 
 #### Preliminary Results
 
+// TODO: images
+
+// TODO: some speedup result, maybe not
+
 ### Goals and Deliverables of the Proposal
+
+In the proposal, we have following **plan to achieve**s and **hope to achieve**s as follows
+
+- Plan to achieve
+  - [x] Acceptable serial panoramic image creation
+  - [x] Tested with real-life images
+  - [x] Parallelize this serial version using OpenMP and MPI
+  - [x] load balancing by ...
+    - [ ] (Deprecated, reasons stated below) subgrid dividing for parallelizing the feature detection phase
+    - [x] Devide images by splitting images into row chunks
+  - [ ]  (Not done yet, but will do) speedup graph for different implementations
+
+- Hope to achieve
+  - [ ] (Not done yet, but very likely will do) Implement CUDA version
+  - [ ] (Very unlikely will do, reasons stated below) Refine the image blending step such as adding color correction)
+  - [ ]  (Unnecessary, reasons stated below) implement load balance in the RANSAC step
+  - [ ] (Not likely possible, reasons stated below) Comparable performance to the OpenCV implementation
+
+#### Something mentioned above
+
+- Why not using subgrid dividing for feature detection
+  - We first implemented that and found that subgrid dividing is not good for load balancing. This is because the places that have more keypoints are likely to be closed to each other. This will lead to high workload for certain grids. Instead, we split the image into **row chunks** and **dynamically** dispatch them to other MPI nodes.
+- We find the result of current version of panoramic image stitching is pretty satisfactory so we decide not to implement the image blending. Moreover it has very limited meaning for this course project.
+- RANSAC step actually has a very balanced load pattern, so it is not necessary to implement load balancing in RANSAC.
+- Why we cannot have comparable performance to the OpenCV implementation
+  - During the time we implemented the OpenCV pipeline, we found that many algorithms that we are implemented are not in the OpenCV library, such as the harris corner keypoint matching. In OpenCV, they uses sift descriptors. There are also many differences between our sequential implementation and the OpenCV implementation even if the majority of the algorithm is the same. Since inherently we are using different algorithms, comparing the performance is not a meaningful thing to do.
+  - However, we still implement the complete pipeline of the OpenCV version. But we are only using it for **referencing visual performance**, and **only focusing on the speedup between OpenMP/MPI/CUDA and sequential version**.
 
 ### Plan for the Poster
 
+// TODO
+
 ### Concerned Issues
+
+- I think currently everything went pretty well. The only concern is that the openmp version's speedup is not as good as expected, we will look into that further.
+- // TODO
 
 ## [Proposal] - [Nov.15th 2023]
 
