@@ -39,7 +39,12 @@ cv::Mat MPIRansacHomographyCalculator::computeHomography(
     }
 
     cv::Mat H = cv::findHomography(srcPoints, dstPoints);
-    if (H.empty()) {
+    // if any of H is empty, we need to skip the iteration for all MPI nodes
+    int isEmpty = H.empty() ? 1 : 0;
+    int globalIsEmpty;
+    MPI_Allreduce(&isEmpty, &globalIsEmpty, 1, MPI_INT, MPI_LOR,
+                  MPI_COMM_WORLD);
+    if (globalIsEmpty) {
       continue;
     }
 
