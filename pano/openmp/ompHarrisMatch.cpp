@@ -34,8 +34,6 @@ OmpHarrisKeypointMatcher::matchKeyPoints(std::vector<cv::KeyPoint> keypointsL,
         std::vector<cv::KeyPoint> localKeypointsL(keypointsL.begin() + start, keypointsL.begin() + end);
         std::vector<cv::DMatch> localMatches = seqHarrisMatchKeyPoints(
             localKeypointsL, keypointsR, image1_, image2_, options_, start);
-
-        #pragma omp critical
         perThreadMatches[tid] = std::move(localMatches);
     }
 
