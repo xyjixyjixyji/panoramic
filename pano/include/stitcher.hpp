@@ -70,6 +70,9 @@ public:
     } else if (options.ransacOptions_.ransacType_ == OcvRansac) {
       homographyCalculator_ =
           std::make_unique<OcvRansacHomographyCalculator>(ransacOptions);
+    } else if (options.ransacOptions_.ransacType_ == MPIRansac) {
+      homographyCalculator_ = std::make_unique<MPIRansacHomographyCalculator>(
+          ransacOptions, options.pid_, options.nproc_);
     } else {
       panic("Invalid ransac type!");
     }

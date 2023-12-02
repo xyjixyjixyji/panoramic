@@ -20,6 +20,7 @@ const std::string OcvWarp = "ocv";
 // --ransac
 const std::string SeqRansac = "seq";
 const std::string OcvRansac = "ocv";
+const std::string MPIRansac = "mpi";
 
 struct HarrisCornerOptions {
   // Smaller k leads to more sensitive detection
@@ -169,7 +170,7 @@ struct PanoramicOptions {
         .default_value(SeqHarrisDetector);
 
     args.add_argument("--ransac")
-        .help("The type of RANSAC to use: seq | ocv")
+        .help("The type of RANSAC to use: seq | ocv | mpi | ...")
         .default_value(SeqRansac);
 
     args.add_argument("--warp")
