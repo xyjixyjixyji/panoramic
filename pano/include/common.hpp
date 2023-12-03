@@ -15,7 +15,6 @@ std::vector<std::vector<double>> getGaussianKernel(int kernelSize,
                                                    double sigma);
 cv::Mat convolveSequential(const cv::Mat &input,
                            const std::vector<std::vector<double>> kernel);
-double computeSSD(const cv::Mat &input1, const cv::Mat &input2);
 
 // helper
 cv::Mat __stitchAllSequential(std::vector<cv::Mat> images,

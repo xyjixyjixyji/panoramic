@@ -1,9 +1,9 @@
 #include <common.hpp>
 #include <limits>
 #include <matcher.hpp>
+#include <omp.h>
 #include <opencv2/core/types.hpp>
 #include <vector>
-#include <omp.h>
 
 OmpHarrisKeypointMatcher::OmpHarrisKeypointMatcher(cv::Mat &image1,
                                                    cv::Mat &image2,
@@ -20,26 +20,66 @@ OmpHarrisKeypointMatcher::OmpHarrisKeypointMatcher(cv::Mat &image1,
 std::vector<cv::DMatch>
 OmpHarrisKeypointMatcher::matchKeyPoints(std::vector<cv::KeyPoint> keypointsL,
                                          std::vector<cv::KeyPoint> keypointsR) {
-    const int num_threads = omp_get_max_threads();
-    std::vector<std::vector<cv::DMatch>> perThreadMatches(num_threads);
-    std::vector<cv::DMatch> allMatches;
+  // options
+  const int patchSize = options_.patchSize_;
+  const double maxSSDThresh = options_.maxSSDThresh_;
+  const int border = patchSize / 2;
 
-    #pragma omp parallel
-    {
-        const int tid = omp_get_thread_num();
-        const int size = keypointsL.size();
-        const int chunk_size = size / num_threads;
-        const int start = tid * chunk_size;
-        const int end = std::min(start + chunk_size, size);
-        std::vector<cv::KeyPoint> localKeypointsL(keypointsL.begin() + start, keypointsL.begin() + end);
-        std::vector<cv::DMatch> localMatches = seqHarrisMatchKeyPoints(
-            localKeypointsL, keypointsR, image1_, image2_, options_, start);
-        perThreadMatches[tid] = std::move(localMatches);
+  std::vector<cv::DMatch> matches;
+
+#pragma omp parallel
+  {
+    std::vector<cv::DMatch> localMatches;
+
+#pragma omp for nowait
+    for (size_t i = 0; i < keypointsL.size(); i++) {
+      const auto &kp1 = keypointsL[i];
+      cv::Point2f pos1 = kp1.pt;
+
+      if (pos1.x < border || pos1.y < border ||
+          pos1.x + border >= image1_.cols || pos1.y + border >= image1_.rows) {
+        continue;
+      }
+
+      size_t bestMatchIndex = -1;
+      double bestMatchSSD = std::numeric_limits<double>::max();
+      for (size_t j = 0; j < keypointsR.size(); j++) {
+        const auto &kp2 = keypointsR[j];
+        cv::Point2f pos2 = kp2.pt;
+
+        if (pos2.x < border || pos2.y < border ||
+            pos2.x + border >= image2_.cols ||
+            pos2.y + border >= image2_.rows) {
+          continue;
+        }
+
+        double ssd = 0;
+        for (int y = -border; y <= border; y++) {
+          for (int x = -border; x <= border; x++) {
+            cv::Vec3b p1 = image1_.at<cv::Vec3b>(pos1.y + y, pos1.x + x);
+            cv::Vec3b p2 = image2_.at<cv::Vec3b>(pos2.y + y, pos2.x + x);
+            double diff = 0;
+            for (int c = 0; c < 3; c++) {
+              diff += (p1[c] - p2[c]) * (p1[c] - p2[c]);
+            }
+            ssd += pow(diff, 2);
+          }
+        }
+
+        if (ssd < bestMatchSSD) {
+          bestMatchSSD = ssd;
+          bestMatchIndex = j;
+        }
+      }
+
+      if (bestMatchSSD < maxSSDThresh) {
+        localMatches.push_back(cv::DMatch(i, bestMatchIndex, bestMatchSSD));
+      }
     }
 
-    for (const auto& localMatches : perThreadMatches) {
-        allMatches.insert(allMatches.end(), localMatches.begin(), localMatches.end());
-    }
+#pragma omp critical
+    { matches.insert(matches.end(), localMatches.begin(), localMatches.end()); }
+  }
 
-    return allMatches;
+  return matches;
 }
