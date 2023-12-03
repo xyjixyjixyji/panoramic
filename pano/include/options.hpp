@@ -10,6 +10,7 @@
 const std::string SeqHarrisDetector = "seq";
 const std::string OpenCVHarrisDetector = "ocv";
 const std::string MPIHarrisDetector = "mpi";
+const std::string OmpHarrisDetector = "omp";
 
 // --warp
 const std::string SeqWarp = "seq";
@@ -19,6 +20,7 @@ const std::string OcvWarp = "ocv";
 const std::string SeqRansac = "seq";
 const std::string OcvRansac = "ocv";
 const std::string MPIRansac = "mpi";
+const std::string OmpRansac = "omp";
 
 struct HarrisCornerOptions {
   // Smaller k leads to more sensitive detection

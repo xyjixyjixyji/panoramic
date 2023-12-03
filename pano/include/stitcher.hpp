@@ -59,6 +59,11 @@ public:
       matcher_ = std::make_unique<MPIHarrisKeypointMatcher>(
           imageL_, imageR_, detOptions.harrisOptions_.value(), options.pid_,
           options.nproc_);
+    } else if (detOptions.detectorType_ == OmpHarrisDetector) {
+      detector_ = std::make_unique<OmpHarrisCornerDetector>(
+        detOptions.harrisOptions_.value());
+      matcher_ = std::make_unique<OmpHarrisKeypointMatcher>(
+        imageL_, imageR_, detOptions.harrisOptions_.value());
     } else {
       panic("Invalid detector type!");
     }
@@ -72,6 +77,9 @@ public:
     } else if (options.ransacOptions_.ransacType_ == MPIRansac) {
       homographyCalculator_ = std::make_unique<MPIRansacHomographyCalculator>(
           ransacOptions, options.pid_, options.nproc_);
+    } else if (options.ransacOptions_.ransacType_ == OmpRansac) {
+      homographyCalculator_ = std::make_unique<OmpRansacHomographyCalculator>(
+          ransacOptions);
     } else {
       panic("Invalid ransac type!");
     }

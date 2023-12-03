@@ -1,0 +1,1 @@
+target_sources(pano PRIVATE ompHarrisDet.cpp ompHarrisMatch.cpp ompRansac.cpp)
