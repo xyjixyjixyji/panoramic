@@ -66,7 +66,7 @@ cv::Mat convolveSequential(const cv::Mat &input,
   return output;
 }
 
-double computeSSD(const cv::Mat &input1, const cv::Mat &input2) {
+double computeSSDSequential(const cv::Mat &input1, const cv::Mat &input2) {
   assert(input1.rows == input2.rows && input1.cols == input2.cols &&
          "Input images have to be of the same size");
 
@@ -229,7 +229,7 @@ seqHarrisMatchKeyPoints(std::vector<cv::KeyPoint> keypointsL,
       cv::Mat patch2 = image2(
           cv::Rect(pos2.x - border, pos2.y - border, patchSize, patchSize));
 
-      double ssd = computeSSD(patch1, patch2);
+      double ssd = computeSSDSequential(patch1, patch2);
       if (ssd < bestMatchSSD) {
         bestMatchSSD = ssd;
         bestMatchIndex = j;

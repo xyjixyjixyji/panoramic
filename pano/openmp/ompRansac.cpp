@@ -39,29 +39,29 @@ cv::Mat OmpRansacHomographyCalculator::computeHomography(
     }
 
     int inlierCount = 0;
-    #pragma omp parallel 
+#pragma omp parallel
     {
-        int localInlierCount = 0;
+      int localInlierCount = 0;
 
-        #pragma omp for nowait schedule(static, 16)
-        for (int i = 0; i < static_cast<int>(matches.size()); ++i) {
-            const auto &match = matches[i];
-            cv::Point2f pt1 = keypoints1[match.queryIdx].pt;
-            cv::Point2f pt2 = keypoints2[match.trainIdx].pt;
-            cv::Mat pt1Mat = (cv::Mat_<double>(3, 1) << pt1.x, pt1.y, 1.0);
+#pragma omp for nowait schedule(static, 16)
+      for (int i = 0; i < static_cast<int>(matches.size()); ++i) {
+        const auto &match = matches[i];
+        cv::Point2f pt1 = keypoints1[match.queryIdx].pt;
+        cv::Point2f pt2 = keypoints2[match.trainIdx].pt;
+        cv::Mat pt1Mat = (cv::Mat_<double>(3, 1) << pt1.x, pt1.y, 1.0);
 
-            // generate the estimate of pt2
-            cv::Mat pt2Transformed = H * pt1Mat;
-            pt2Transformed /= pt2Transformed.at<double>(2, 0); // Normalize
-            cv::Point2f pt2Estimate(pt2Transformed.at<double>(0, 0),
-                                    pt2Transformed.at<double>(1, 0));
+        // generate the estimate of pt2
+        cv::Mat pt2Transformed = H * pt1Mat;
+        pt2Transformed /= pt2Transformed.at<double>(2, 0); // Normalize
+        cv::Point2f pt2Estimate(pt2Transformed.at<double>(0, 0),
+                                pt2Transformed.at<double>(1, 0));
 
-            if (cv::norm(pt2Estimate - pt2) < distanceThreshold)
-                localInlierCount++;
-        }
+        if (cv::norm(pt2Estimate - pt2) < distanceThreshold)
+          localInlierCount++;
+      }
 
-        #pragma omp critical
-        inlierCount += localInlierCount;
+#pragma omp critical
+      inlierCount += localInlierCount;
     }
 
     if (inlierCount > bestInlierCount) {
