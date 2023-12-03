@@ -5,6 +5,7 @@
 #include <common.hpp>
 #include <detector.hpp>
 #include <matcher.hpp>
+#include <omp.h>
 #include <options.hpp>
 #include <ransac.hpp>
 
@@ -64,6 +65,7 @@ public:
           detOptions.harrisOptions_.value());
       matcher_ = std::make_unique<OmpHarrisKeypointMatcher>(
           imageL_, imageR_, detOptions.harrisOptions_.value());
+      omp_set_dynamic(1);
     } else {
       panic("Invalid detector type!");
     }
@@ -80,6 +82,7 @@ public:
     } else if (options.ransacOptions_.ransacType_ == OmpRansac) {
       homographyCalculator_ =
           std::make_unique<OmpRansacHomographyCalculator>(ransacOptions);
+      omp_set_dynamic(1);
     } else {
       panic("Invalid ransac type!");
     }
