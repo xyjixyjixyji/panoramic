@@ -66,21 +66,6 @@ cv::Mat convolveSequential(const cv::Mat &input,
   return output;
 }
 
-double computeSSDSequential(const cv::Mat &input1, const cv::Mat &input2) {
-  assert(input1.rows == input2.rows && input1.cols == input2.cols &&
-         "Input images have to be of the same size");
-
-  double sum = 0.0;
-  for (int y = 0; y < input1.rows; y++) {
-    for (int x = 0; x < input1.cols; x++) {
-      double diff = input1.at<double>(y, x) - input2.at<double>(y, x);
-      sum += diff * diff;
-    }
-  }
-
-  return sum;
-}
-
 inline cv::Mat __stitchTwo(cv::Mat imageL, cv::Mat imageR,
                            PanoramicOptions options) {
   auto stitcher = Stitcher::createStitcher(imageL, imageR, options);
@@ -229,7 +214,19 @@ seqHarrisMatchKeyPoints(std::vector<cv::KeyPoint> keypointsL,
       cv::Mat patch2 = image2(
           cv::Rect(pos2.x - border, pos2.y - border, patchSize, patchSize));
 
-      double ssd = computeSSDSequential(patch1, patch2);
+      double ssd = 0;
+      for (int y = -border; y <= border; y++) {
+        for (int x = -border; x <= border; x++) {
+          cv::Vec3b p1 = image1.at<cv::Vec3b>(pos1.y + y, pos1.x + x);
+          cv::Vec3b p2 = image2.at<cv::Vec3b>(pos2.y + y, pos2.x + x);
+          double diff = 0;
+          for (int c = 0; c < 3; c++) {
+            diff += (p1[c] - p2[c]) * (p1[c] - p2[c]);
+          }
+          ssd += pow(diff, 2);
+        }
+      }
+
       if (ssd < bestMatchSSD) {
         bestMatchSSD = ssd;
         bestMatchIndex = j;
