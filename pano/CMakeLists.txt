@@ -1,28 +1,18 @@
-# MPI
-find_package(MPI REQUIRED)
-include_directories(${MPI_INCLUDE_PATH})
-
-# OpenCV
-find_package(OpenCV REQUIRED)
-include_directories(${OpenCV_INCLUDE_DIRS})
-
-# OpenMP
-find_package(OpenMP REQUIRED)
-include_directories(${OpenMP_INCLUDE_DIRS})
-
 # static library
-add_library(pano STATIC)
-target_sources(pano PRIVATE stitcher.cpp common.cpp)
+add_library(pano STATIC stitcher.cpp common.cpp)
 
-# link opencv
-target_link_libraries(pano PRIVATE argparse)
-target_link_libraries(pano PUBLIC ${OpenCV_LIBS})
-target_link_libraries(pano PUBLIC MPI::MPI_CXX)
-target_link_libraries(pano PUBLIC OpenMP::OpenMP_CXX)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall -Wextra -Wpedantic -Werror")
 
+# include
 target_include_directories(pano PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-# TODO: cuda, mpi, openmp
+# argparse
+target_link_libraries(pano PRIVATE argparse)
+
+enable_language(CUDA)
+
+# cuda, mpi, openmp, opencv
+add_subdirectory(cuda)
 add_subdirectory(seq)
 add_subdirectory(opencv)
 add_subdirectory(mpi)

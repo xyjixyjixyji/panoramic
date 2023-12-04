@@ -66,6 +66,12 @@ public:
       matcher_ = std::make_unique<OmpHarrisKeypointMatcher>(
           imageL_, imageR_, detOptions.harrisOptions_.value());
       omp_set_dynamic(1);
+    } else if (detOptions.detectorType_ == CudaHarrisDetector) {
+      detector_ = std::make_unique<CudaHarrisCornerDetector>(
+          detOptions.harrisOptions_.value());
+      matcher_ = std::make_unique<CudaHarrisKeypointMatcher>(
+          imageL_, imageR_, detOptions.harrisOptions_.value());
+      omp_set_dynamic(1);
     } else {
       panic("Invalid detector type!");
     }
@@ -83,6 +89,9 @@ public:
       homographyCalculator_ =
           std::make_unique<OmpRansacHomographyCalculator>(ransacOptions);
       omp_set_dynamic(1);
+    } else if (options.ransacOptions_.ransacType_ == CudaRansac) {
+      homographyCalculator_ =
+          std::make_unique<CudaRansacHomographyCalculator>(ransacOptions);
     } else {
       panic("Invalid ransac type!");
     }

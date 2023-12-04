@@ -43,6 +43,17 @@ public:
   std::vector<cv::KeyPoint> detect(const cv::Mat &image) override;
 };
 
+class CudaHarrisCornerDetector : public FeatureDetector {
+private:
+  const HarrisCornerOptions options_;
+
+public:
+  CudaHarrisCornerDetector(HarrisCornerOptions options);
+
+  std::vector<cv::KeyPoint> detect(const cv::Mat &image) override;
+};
+
+
 class MPIHarrisCornerDetector : public FeatureDetector {
 private:
   const HarrisCornerOptions options_;

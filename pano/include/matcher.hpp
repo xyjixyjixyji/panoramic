@@ -83,4 +83,21 @@ public:
                  std::vector<cv::KeyPoint> keypointsR) override;
 };
 
+class CudaHarrisKeypointMatcher : public KeyPointMatcher {
+private:
+  const cv::Mat &image1_;
+  const cv::Mat &image2_;
+  const HarrisCornerOptions options_;
+
+public:
+  // Initialize the matcher with two images and their keypoints
+  CudaHarrisKeypointMatcher(cv::Mat &image1, cv::Mat &image2,
+                           HarrisCornerOptions options);
+
+  // Match keypoints detected by Harris corner detector
+  std::vector<cv::DMatch>
+  matchKeyPoints(std::vector<cv::KeyPoint> keypointsL,
+                 std::vector<cv::KeyPoint> keypointsR) override;
+};
+
 #endif
