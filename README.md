@@ -31,14 +31,16 @@ In this project, we implement the parallelized panoramic image stitching, which 
 
 Our current code can be found [here](https://github.com/Ji-Xinyou/panoramic). So far, we have implemented
 
-- sequential version of the pipeline
+- Sequential version of the pipeline
 - MPI version of the pipeline
 - OpenMP version of the pipeline
-- the pipeline using OpenCV for reference
+- Pipeline using OpenCV for reference
 
 #### Preliminary Results
 
-For the sake of simplicity, we have been testing our program using two sets of pictures. For final report, we will have more test cases, including automatically generated ones (*e.g.* stitching photos with random lines, dots, and color blocks), for a more comprehensive performance benchmark.
+##### Stitching Results and Speedup
+
+For the sake of simplicity, we have been testing our program using two sets of pictures. For final report, we will have more test cases, for a more comprehensive performance benchmark.
 
 <p align="center">
  <img width="727" alt="1" src="https://github.com/Ji-Xinyou/panoramic/assets/70172199/015105f4-1642-454f-9ca8-dd15c5dc36a2">
@@ -64,6 +66,20 @@ Both mpi and openmp versions used 8 threads and achieved **a speedup around 9x**
 | total time | 127150.48  | 15936.91 | 14059.99 |   N/A    |
 
 In the above case, we stitched 4 images together, where mpi and openmp still both used 8 threads, achieving **speedup around 7.9x for mpi** and **9.0x for openmp**.
+
+##### Visualization of keypoint detection and matching
+
+The following is the visualization of keypoints detected by harris corner detector.
+
+<p align="center">
+<img src="README/screenshots 4.png" alt="screenshots 4" style="zoom: 60%;" />
+</p>
+
+The following is the visualization of the matches of the keypoints detected above. (We use the SSD of patches around keypoints as descriptors)
+
+<p align="center">
+<img src="README/screenshots 2.png" alt="screenshots 2" style="zoom: 60%;" />
+</p>
 
 ### Goals and Deliverables of the Proposal
 
@@ -107,6 +123,8 @@ We plan to show the following in the poster session
 ### Concerned Issues
 
 - We managed to build this on GHC machine and our local machine, but still working on making it buildable on PSC machine. The only concern here is to get required environment without root privilege. (Docker might be a solution be we are looking for easier solutions)
+
+---
 
 ## [Proposal] - [Nov.15th 2023]
 
