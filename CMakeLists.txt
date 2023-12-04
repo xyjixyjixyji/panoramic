@@ -17,6 +17,3 @@ add_subdirectory(pano)
 
 add_executable(pano_cmd main.cpp)
 target_link_libraries(pano_cmd pano argparse)
-
-# set_target_properties(pano_cmd PROPERTIES COMPILE_FLAGS "-g")
-
