@@ -197,10 +197,7 @@ seqHarrisMatchKeyPoints(std::vector<cv::KeyPoint> keypointsL,
       continue;
     }
 
-    cv::Mat patch1 = image1(
-        cv::Rect(pos1.x - border, pos1.y - border, patchSize, patchSize));
-
-    size_t bestMatchIndex = -1;
+    int bestMatchIndex = -1;
     double bestMatchSSD = std::numeric_limits<double>::max();
     for (size_t j = 0; j < keypointsR.size(); j++) {
       const auto &kp2 = keypointsR[j];
@@ -210,9 +207,6 @@ seqHarrisMatchKeyPoints(std::vector<cv::KeyPoint> keypointsL,
           pos2.x + border >= image2.cols || pos2.y + border >= image2.rows) {
         continue;
       }
-
-      cv::Mat patch2 = image2(
-          cv::Rect(pos2.x - border, pos2.y - border, patchSize, patchSize));
 
       double ssd = 0;
       for (int y = -border; y <= border; y++) {
