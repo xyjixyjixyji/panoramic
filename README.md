@@ -42,27 +42,28 @@ For the sake of simplicity, we have been testing our program using two sets of p
 
 <p align="center">
  <img width="727" alt="1" src="https://github.com/Ji-Xinyou/panoramic/assets/70172199/015105f4-1642-454f-9ca8-dd15c5dc36a2">
-
-|                       | sequential | mpi     | openmp  | opencv  |
-|-----------------------|------------|---------|---------|---------|
-| keypoint detect img 1 | 170.42     | 14.05   | 52.64   | 64.48   |
-| keypoint detect img 2 | 133.19     | 14.40   | 36.06   | 37.63   |
-| keypoint matching     | 34145.31   | 7646.63 | 6932.69 | 4492.09 |
-| compute homography    | 7417.36    | 375.06  | 919.31  | 134.23  |
-| total time            | 41875.30   | 8096.24 | 7946.02 | 4741.58 |
 </p>
 
-The above shows the stitching result and time (in ms) spent on each step for each version. Both mpi and openmp versions used 8 threads and achieved a speedup around 5x.
+| Task                  | sequential | mpi     | openmp  | opencv  |
+|-----------------------|------------|---------|---------|---------|
+| keypoint detect img 1 | 172.53     | 14.05   | 52.64   | 64.48   |
+| keypoint detect img 2 | 133.01     | 14.40   | 36.06   | 37.63   |
+| keypoint matching     | 66221.76   | 7646.63 | 6932.69 | 4492.09 |
+| compute homography    | 6146.03    | 375.06  | 919.31  | 134.23  |
+| total time            | 72673.63   | 8096.24 | 7946.02 | 4741.58 |
+
+The above shows the stitching result and time (in ms) spent on each step for each version(warp time omitted, only around 4ms). (We ran multiple times and took the average since the result has high variance)
+Both mpi and openmp versions used 8 threads and achieved **a speedup around 9x**.
 
 <p align="center">
 <img width="788" alt="2" src="https://github.com/Ji-Xinyou/panoramic/assets/70172199/8a075ea5-3b16-4121-84d9-5da2a0edc06e">
+</p>
 
 |            | sequential | mpi      | openmp   | opencv   |
 |------------|------------|----------|----------|----------|
-| total time | 127150.48  | 15936.91 | 14059.99 | 69718.96 |
-</p>
+| total time | 127150.48  | 15936.91 | 14059.99 |   N/A    |
 
-In the above case, we stitched 4 images together, where mpi and openmp still both used 8 threads. As we get more data, the advantage of the parallel versions becomes more obvious, achieving speedup around 8x.
+In the above case, we stitched 4 images together, where mpi and openmp still both used 8 threads, achieving **speedup around 7.9x for mpi** and **9.0x for openmp**.
 
 ### Goals and Deliverables of the Proposal
 
@@ -72,15 +73,15 @@ In the proposal, we have following **plan to achieve**s and **hope to achieve**s
   - [x] Acceptable serial panoramic image creation
   - [x] Tested with real-life images
   - [x] Parallelize this serial version using OpenMP and MPI
-  - [x] load balancing by ...
+  - [x] Load balancing by ...
     - [x] Devide images by splitting images into row chunks
       - We are not using subgrid dividing for parallelizing the feature detection phase, reasons stated below.
-  - [ ]  speedup graph for different implementations
+  - [ ]  Plot speedup graph for different implementations
 - Hope to achieve
-  - [ ] (**very likely will do**) Implement CUDA version
-  - [ ] (**Very unlikely will do**, reasons stated below) Refine the image blending step such as adding color correction)
-  - [ ]  (**Unnecessary**, reasons stated below) implement load balance in the RANSAC step
   - [x] (Not 100% fair, reasons stated below) Comparable performance to the OpenCV implementation
+  - [ ] (**Very likely will do**) Implement CUDA version
+  - [ ] (**Very unlikely will do**, reasons stated below) Refine the image blending step such as adding color correction)
+  - [ ]  (**Unnecessary**, reasons stated below) Implement load balance in the RANSAC step
 
 #### Something mentioned above
 
@@ -97,11 +98,15 @@ In the proposal, we have following **plan to achieve**s and **hope to achieve**s
 
 ### Plan for the Poster
 
-The demo we will show at the poster presentation is to showcase stitching a few images together. The specific format is TBD, but this could range from having a simple interactive website where everyone can go and upload their own pictures, or we run the program on our laptop. We will show some speedup graphs on the poster to show how well our paralleled versions improve the performance.
+We plan to show the following in the poster session
+- The detailed speedup graph of comparasion between seq/mpi/openmp/cuda/opencv under multiple cases
+- The visualized output, i.e. the image before/after the stitching
+- The detail of our implementations
+- (Possible) Bring our laptop and run the program at the session
 
 ### Concerned Issues
 
-- We managed to build this on GHC machine and local machine, but still working on making it buildable on PSC machine. The only concern here is to get required environment without root privilege. (Docker might be a solution be we are looking for easier solutions)
+- We managed to build this on GHC machine and our local machine, but still working on making it buildable on PSC machine. The only concern here is to get required environment without root privilege. (Docker might be a solution be we are looking for easier solutions)
 
 ## [Proposal] - [Nov.15th 2023]
 
