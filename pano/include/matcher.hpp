@@ -92,7 +92,7 @@ private:
 public:
   // Initialize the matcher with two images and their keypoints
   CudaHarrisKeypointMatcher(cv::Mat &image1, cv::Mat &image2,
-                           HarrisCornerOptions options);
+                            HarrisCornerOptions options);
 
   // Match keypoints detected by Harris corner detector
   std::vector<cv::DMatch>
