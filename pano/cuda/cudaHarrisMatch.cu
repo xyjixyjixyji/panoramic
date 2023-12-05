@@ -2,6 +2,7 @@
 #include <limits>
 #include <matcher.hpp>
 #include <opencv2/core/types.hpp>
+#include <sys/types.h>
 #include <vector>
 
 #define CUDA_CHECK(call)                                                       \
@@ -22,7 +23,7 @@ __global__ void matchKeypointsKernel(
     const float *kpsL_x, const float *kpsL_y, const float *kpsR_x,
     const float *kpsR_y, uchar3 *image1GPU, uchar3 *image2GPU,
     int numImage1Rows, int numImage1Cols, int numImage2Rows, int numImage2Cols,
-    int numKpsL, int numKpsR, int *bestMatchIndices, double *bestMatchSSDs,
+    int numKpsL, int numKpsR, int *bestMatchIndices, uint64_t *bestMatchSSDs,
     const int patchSize, const int maxSSDThresh) {
   // Assuming each block processes one keypoint from keypointsL
   int keypointIdx = blockIdx.x;
@@ -54,13 +55,13 @@ __global__ void matchKeypointsKernel(
   // keypointsR
   if (lx < patchSize && ly < patchSize) {
     int bestMatchIndex = -1;
-    double bestMatchSSD = 1e300;
+    uint64_t bestMatchSSD = 0xffffffffffffffff;
     for (int j = 0; j < numKpsR; ++j) {
       float pos2_x = kpsR_x[j];
       float pos2_y = kpsR_y[j];
 
       // Compute SSD
-      double ssd = 0;
+      uint64_t ssd = 0;
       for (int dy = -border; dy <= border; ++dy) {
         for (int dx = -border; dx <= border; ++dx) {
           uchar3 p1 =
@@ -72,9 +73,9 @@ __global__ void matchKeypointsKernel(
                           ? image2GPU[globalY2 * numImage2Cols + globalX2]
                           : make_uchar3(0, 0, 0);
 
-          double diff = (p1.x - p2.x) * (p1.x - p2.x) +
-                        (p1.y - p2.y) * (p1.y - p2.y) +
-                        (p1.z - p2.z) * (p1.z - p2.z);
+          uint64_t diff = (p1.x - p2.x) * (p1.x - p2.x) +
+                          (p1.y - p2.y) * (p1.y - p2.y) +
+                          (p1.z - p2.z) * (p1.z - p2.z);
           ssd += diff;
         }
       }
@@ -155,9 +156,10 @@ std::vector<cv::DMatch> CudaHarrisKeypointMatcher::matchKeyPoints(
 
   // Allocate memory for the best match indices and SSDs on GPU
   int *d_bestMatchIndices;
-  double *d_bestMatchSSDs;
+  uint64_t *d_bestMatchSSDs;
   CUDA_CHECK(cudaMalloc(&d_bestMatchIndices, keypointsL.size() * sizeof(int)));
-  CUDA_CHECK(cudaMalloc(&d_bestMatchSSDs, keypointsL.size() * sizeof(double)));
+  CUDA_CHECK(
+      cudaMalloc(&d_bestMatchSSDs, keypointsL.size() * sizeof(uint64_t)));
 
   // Initialize the best match arrays to -1 (or any sentinel value)
   CUDA_CHECK(
