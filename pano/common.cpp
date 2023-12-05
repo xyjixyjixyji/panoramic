@@ -218,9 +218,13 @@ seqHarrisMatchKeyPoints(std::vector<cv::KeyPoint> keypointsL,
             diff += (p1[c] - p2[c]) * (p1[c] - p2[c]);
           }
           ssd += pow(diff, 2);
+
+          if (ssd > bestMatchSSD)
+            goto end;
         }
       }
 
+    end:
       if (ssd < bestMatchSSD) {
         bestMatchSSD = ssd;
         bestMatchIndex = j;

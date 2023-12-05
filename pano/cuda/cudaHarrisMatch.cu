@@ -61,9 +61,13 @@ __global__ void matchKeypointsKernel(
         diff += (p1.y - p2.y) * (p1.y - p2.y);
         diff += (p1.z - p2.z) * (p1.z - p2.z);
         ssd += pow(diff, 2);
+        if (ssd > bestMatchSSD) {
+          goto end;
+        }
       }
     }
 
+  end:
     if (ssd < bestMatchSSD) {
       bestMatchSSD = ssd;
       bestMatchIndex = j;
