@@ -2,6 +2,7 @@
 #include <limits>
 #include <matcher.hpp>
 #include <opencv2/core/types.hpp>
+#include <sys/types.h>
 #include <vector>
 
 #define CUDA_CHECK(call)                                                       \
@@ -22,57 +23,76 @@ __global__ void matchKeypointsKernel(
     const float *kpsL_x, const float *kpsL_y, const float *kpsR_x,
     const float *kpsR_y, uchar3 *image1GPU, uchar3 *image2GPU,
     int numImage1Rows, int numImage1Cols, int numImage2Rows, int numImage2Cols,
-    int numKpsL, int numKpsR, int *bestMatchIndices, double *bestMatchSSDs,
+    int numKpsL, int numKpsR, int *bestMatchIndices, uint64_t *bestMatchSSDs,
     const int patchSize, const int maxSSDThresh) {
-  // cuda kernel will be responsible for kpsL[i], matching it with everypoint of
-  // kpsR, store the best match in bestMatchIndices[i] and bestMatchSSDs[i]
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-  if (i >= numKpsL)
+  // Assuming each block processes one keypoint from keypointsL
+  int keypointIdx = blockIdx.x;
+  if (keypointIdx >= numKpsL)
     return;
 
+  // Shared memory for the patch in image2GPU
+  extern __shared__ uchar3 sharedPatch[];
+
+  float pos1_x = kpsL_x[keypointIdx];
+  float pos1_y = kpsL_y[keypointIdx];
   const int border = patchSize / 2;
 
-  float pos1_x = kpsL_x[i];
-  float pos1_y = kpsL_y[i];
-  if (pos1_x < border || pos1_y < border || pos1_x + border >= numImage1Cols ||
-      pos1_y + border >= numImage1Rows) {
-    return;
+  // Each thread in the block loads part of the patch into shared memory
+  int lx = threadIdx.x;
+  int ly = threadIdx.y;
+  int globalX = pos1_x - border + lx;
+  int globalY = pos1_y - border + ly;
+
+  if (globalX >= 0 && globalX < numImage1Cols && globalY >= 0 &&
+      globalY < numImage1Rows) {
+    sharedPatch[ly * patchSize + lx] =
+        image1GPU[globalY * numImage1Cols + globalX];
   }
 
-  int bestMatchIndex = -1;
-  double bestMatchSSD = 1e300;
-  for (size_t j = 0; j < numKpsR; j++) {
-    float pos2_x = kpsR_x[j];
-    float pos2_y = kpsR_y[j];
-    if (pos2_x < border || pos2_y < border ||
-        pos2_x + border >= numImage2Cols || pos2_y + border >= numImage2Rows) {
-      continue;
-    }
+  __syncthreads();
 
-    double ssd = 0;
-    for (int y = -border; y <= border; y++) {
-      for (int x = -border; x <= border; x++) {
-        uchar3 p1 =
-            image1GPU[(int)(pos1_y + y) * numImage1Cols + (int)(pos1_x + x)];
-        uchar3 p2 =
-            image2GPU[(int)(pos2_y + y) * numImage2Cols + (int)(pos2_x + x)];
-        double diff = 0;
-        diff += (p1.x - p2.x) * (p1.x - p2.x);
-        diff += (p1.y - p2.y) * (p1.y - p2.y);
-        diff += (p1.z - p2.z) * (p1.z - p2.z);
-        ssd += pow(diff, 2);
+  // SSD calculation for the current keypoint against all keypoints in
+  // keypointsR
+  if (lx < patchSize && ly < patchSize) {
+    int bestMatchIndex = -1;
+    uint64_t bestMatchSSD = 0xffffffffffffffff;
+    for (int j = 0; j < numKpsR; ++j) {
+      float pos2_x = kpsR_x[j];
+      float pos2_y = kpsR_y[j];
+
+      // Compute SSD
+      uint64_t ssd = 0;
+      for (int dy = -border; dy <= border; ++dy) {
+        for (int dx = -border; dx <= border; ++dx) {
+          uchar3 p1 =
+              sharedPatch[(ly + dy + border) * patchSize + (lx + dx + border)];
+          int globalX2 = pos2_x + dx;
+          int globalY2 = pos2_y + dy;
+          uchar3 p2 = (globalX2 >= 0 && globalX2 < numImage2Cols &&
+                       globalY2 >= 0 && globalY2 < numImage2Rows)
+                          ? image2GPU[globalY2 * numImage2Cols + globalX2]
+                          : make_uchar3(0, 0, 0);
+
+          uint64_t diff = (p1.x - p2.x) * (p1.x - p2.x) +
+                          (p1.y - p2.y) * (p1.y - p2.y) +
+                          (p1.z - p2.z) * (p1.z - p2.z);
+          ssd += diff;
+        }
+      }
+
+      if (ssd < bestMatchSSD) {
+        bestMatchSSD = ssd;
+        bestMatchIndex = j;
       }
     }
 
-    if (ssd < bestMatchSSD) {
-      bestMatchSSD = ssd;
-      bestMatchIndex = j;
+    // Store the best match for this keypoint
+    if (threadIdx.x == 0 && threadIdx.y == 0) {
+      if (bestMatchSSD < maxSSDThresh) {
+        bestMatchIndices[keypointIdx] = bestMatchIndex;
+        bestMatchSSDs[keypointIdx] = bestMatchSSD;
+      }
     }
-  }
-
-  if (bestMatchSSD < maxSSDThresh) {
-    bestMatchIndices[i] = bestMatchIndex;
-    bestMatchSSDs[i] = bestMatchSSD;
   }
 }
 
@@ -136,9 +156,10 @@ std::vector<cv::DMatch> CudaHarrisKeypointMatcher::matchKeyPoints(
 
   // Allocate memory for the best match indices and SSDs on GPU
   int *d_bestMatchIndices;
-  double *d_bestMatchSSDs;
+  uint64_t *d_bestMatchSSDs;
   CUDA_CHECK(cudaMalloc(&d_bestMatchIndices, keypointsL.size() * sizeof(int)));
-  CUDA_CHECK(cudaMalloc(&d_bestMatchSSDs, keypointsL.size() * sizeof(double)));
+  CUDA_CHECK(
+      cudaMalloc(&d_bestMatchSSDs, keypointsL.size() * sizeof(uint64_t)));
 
   // Initialize the best match arrays to -1 (or any sentinel value)
   CUDA_CHECK(
@@ -146,13 +167,20 @@ std::vector<cv::DMatch> CudaHarrisKeypointMatcher::matchKeyPoints(
   CUDA_CHECK(
       cudaMemset(d_bestMatchSSDs, -1, keypointsL.size() * sizeof(double)));
 
-  int threadPerBlock = 256;
-  int numBlock = (keypointsL.size() + threadPerBlock - 1) / threadPerBlock;
-  matchKeypointsKernel<<<numBlock, threadPerBlock>>>(
+  int numBlocks = keypointsL.size();
+  dim3 blockSize(patchSize, patchSize);
+  int sharedMemSize = patchSize * patchSize * sizeof(uchar3);
+  matchKeypointsKernel<<<numBlocks, dim3(patchSize, patchSize),
+                         sharedMemSize>>>(
       d_kpsL_X, d_kpsL_Y, d_kpsR_X, d_kpsR_Y, d_image1, d_image2, image1_.rows,
       image1_.cols, image2_.rows, image2_.cols, keypointsL.size(),
       keypointsR.size(), d_bestMatchIndices, d_bestMatchSSDs, patchSize,
       maxSSDThresh);
+  cudaError_t kernelError = cudaGetLastError();
+  if (kernelError != cudaSuccess) {
+    printf("Kernel Error: %s\n", cudaGetErrorString(kernelError));
+  }
+  CUDA_CHECK(cudaDeviceSynchronize());
 
   // Copy the best match indices and SSDs back to the host
   std::vector<int> bestMatchIndices(keypointsL.size());

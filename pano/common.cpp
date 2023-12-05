@@ -1,5 +1,6 @@
 #include <cassert>
 #include <common.hpp>
+#include <cstdint>
 #include <opencv2/core/mat.hpp>
 #include <opencv2/features2d.hpp>
 #include <stitcher.hpp>
@@ -198,7 +199,7 @@ seqHarrisMatchKeyPoints(std::vector<cv::KeyPoint> keypointsL,
     }
 
     int bestMatchIndex = -1;
-    double bestMatchSSD = std::numeric_limits<double>::max();
+    uint64_t bestMatchSSD = std::numeric_limits<uint64_t>::max();
     for (size_t j = 0; j < keypointsR.size(); j++) {
       const auto &kp2 = keypointsR[j];
       cv::Point2f pos2 = kp2.pt;
@@ -208,16 +209,16 @@ seqHarrisMatchKeyPoints(std::vector<cv::KeyPoint> keypointsL,
         continue;
       }
 
-      double ssd = 0;
+      uint64_t ssd = 0;
       for (int y = -border; y <= border; y++) {
         for (int x = -border; x <= border; x++) {
           cv::Vec3b p1 = image1.at<cv::Vec3b>(pos1.y + y, pos1.x + x);
           cv::Vec3b p2 = image2.at<cv::Vec3b>(pos2.y + y, pos2.x + x);
-          double diff = 0;
+          uint64_t diff = 0;
           for (int c = 0; c < 3; c++) {
             diff += (p1[c] - p2[c]) * (p1[c] - p2[c]);
           }
-          ssd += pow(diff, 2);
+          ssd += diff * diff;
         }
       }
 
