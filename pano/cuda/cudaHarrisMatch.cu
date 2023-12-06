@@ -18,22 +18,23 @@
 __constant__ int cuPatchSize;
 __constant__ uint64_t cuMaxSSDThreash;
 
-texture<uchar4, 2, cudaReadModeElementType> texImage1;
-texture<uchar4, 2, cudaReadModeElementType> texImage2;
+cudaTextureObject_t texImage1;
+cudaTextureObject_t texImage2;
 
-void setupTexture(cudaArray *cuArray1, cudaArray *cuArray2) {
-  texImage1.addressMode[0] = cudaAddressModeWrap;
-  texImage1.addressMode[1] = cudaAddressModeWrap;
-  texImage1.filterMode = cudaFilterModePoint;
-  texImage1.normalized = false;
+void createTextureObject(cudaTextureObject_t &texObj, cudaArray *cuArray) {
+  cudaResourceDesc resDesc;
+  memset(&resDesc, 0, sizeof(resDesc));
+  resDesc.resType = cudaResourceTypeArray;
+  resDesc.res.array.array = cuArray;
 
-  texImage2.addressMode[0] = cudaAddressModeWrap;
-  texImage2.addressMode[1] = cudaAddressModeWrap;
-  texImage2.filterMode = cudaFilterModePoint;
-  texImage2.normalized = false;
+  cudaTextureDesc texDesc;
+  memset(&texDesc, 0, sizeof(texDesc));
+  texDesc.addressMode[0] = cudaAddressModeWrap;
+  texDesc.addressMode[1] = cudaAddressModeWrap;
+  texDesc.filterMode = cudaFilterModePoint;
+  texDesc.normalizedCoords = false;
 
-  cudaBindTextureToArray(texImage1, cuArray1);
-  cudaBindTextureToArray(texImage2, cuArray2);
+  CUDA_CHECK(cudaCreateTextureObject(&texObj, &resDesc, &texDesc, nullptr));
 }
 
 CudaHarrisKeypointMatcher::CudaHarrisKeypointMatcher(
@@ -52,9 +53,9 @@ CudaHarrisKeypointMatcher::CudaHarrisKeypointMatcher(
           make_uchar4(pixel[0], pixel[1], pixel[2], 0);
     }
   }
-  cudaMemcpyToArray(cuArray1, 0, 0, convertedImage1,
-                    image1_.cols * image1_.rows * sizeof(uchar4),
-                    cudaMemcpyHostToDevice);
+  cudaMemcpy2DToArray(
+      cuArray1, 0, 0, convertedImage1, image1_.cols * sizeof(uchar4),
+      image1_.cols * sizeof(uchar4), image1_.rows, cudaMemcpyHostToDevice);
   delete convertedImage1;
 
   uchar4 *convertedImage2 = new uchar4[image2_.cols * image2_.rows];
@@ -65,26 +66,26 @@ CudaHarrisKeypointMatcher::CudaHarrisKeypointMatcher(
           make_uchar4(pixel[0], pixel[1], pixel[2], 0);
     }
   }
-  cudaMemcpyToArray(cuArray2, 0, 0, convertedImage2,
-                    image2_.cols * image2_.rows * sizeof(uchar4),
-                    cudaMemcpyHostToDevice);
+  cudaMemcpy2DToArray(
+      cuArray2, 0, 0, convertedImage2, image2_.cols * sizeof(uchar4),
+      image2_.cols * sizeof(uchar4), image2_.rows, cudaMemcpyHostToDevice);
   delete convertedImage2;
 
-  setupTexture(cuArray1, cuArray2);
+  createTextureObject(texImage1, cuArray1);
+  createTextureObject(texImage2, cuArray2);
 }
 
 CudaHarrisKeypointMatcher::~CudaHarrisKeypointMatcher() {
-  cudaUnbindTexture(texImage1);
-  cudaUnbindTexture(texImage2);
+  CUDA_CHECK(cudaDestroyTextureObject(texImage1));
+  CUDA_CHECK(cudaDestroyTextureObject(texImage2));
 }
 
-__global__ void matchKeypointsKernel(const float *kpsL_x, const float *kpsL_y,
-                                     const float *kpsR_x, const float *kpsR_y,
-                                     int numImage1Rows, int numImage1Cols,
-                                     int numImage2Rows, int numImage2Cols,
-                                     int numKpsL, int numKpsR,
-                                     int *bestMatchIndices,
-                                     uint64_t *bestMatchSSDs) {
+__global__ void matchKeypointsKernel(
+    const float *kpsL_x, const float *kpsL_y, const float *kpsR_x,
+    const float *kpsR_y, cudaTextureObject_t texImage1,
+    cudaTextureObject_t texImage2, int numImage1Rows, int numImage1Cols,
+    int numImage2Rows, int numImage2Cols, int numKpsL, int numKpsR,
+    int *bestMatchIndices, uint64_t *bestMatchSSDs) {
   // Assuming each block processes one keypoint from keypointsL
   int keypointIdx = blockIdx.x * blockDim.x + threadIdx.x;
   if (keypointIdx >= numKpsL)
@@ -108,8 +109,8 @@ __global__ void matchKeypointsKernel(const float *kpsL_x, const float *kpsL_y,
     uint64_t ssd = 0;
     for (int dy = -border; dy <= border; ++dy) {
       for (int dx = -border; dx <= border; ++dx) {
-        uchar4 p1 = tex2D(texImage1, pos1_x + dx, pos1_y + dy);
-        uchar4 p2 = tex2D(texImage2, pos2_x + dx, pos2_y + dy);
+        uchar4 p1 = tex2D<uchar4>(texImage1, pos1_x + dx, pos1_y + dy);
+        uchar4 p2 = tex2D<uchar4>(texImage2, pos2_x + dx, pos2_y + dy);
 
         ssd += (p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y) +
                (p1.z - p2.z) * (p1.z - p2.z);
@@ -199,9 +200,9 @@ std::vector<cv::DMatch> CudaHarrisKeypointMatcher::matchKeyPoints(
   int numBlocks = (keypointsL.size() + threadsPerBlock - 1) / threadsPerBlock;
 
   matchKeypointsKernel<<<numBlocks, threadsPerBlock>>>(
-      d_kpsL_X, d_kpsL_Y, d_kpsR_X, d_kpsR_Y, image1_.rows, image1_.cols,
-      image2_.rows, image2_.cols, keypointsL.size(), keypointsR.size(),
-      d_bestMatchIndices, d_bestMatchSSDs);
+      d_kpsL_X, d_kpsL_Y, d_kpsR_X, d_kpsR_Y, texImage1, texImage2,
+      image1_.rows, image1_.cols, image2_.rows, image2_.cols, keypointsL.size(),
+      keypointsR.size(), d_bestMatchIndices, d_bestMatchSSDs);
   cudaError_t kernelError = cudaGetLastError();
   if (kernelError != cudaSuccess) {
     printf("Kernel Error: %s\n", cudaGetErrorString(kernelError));
