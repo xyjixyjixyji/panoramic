@@ -86,12 +86,9 @@ __global__ void matchKeypointsKernel(const float *kpsL_x, const float *kpsL_y,
                                      int *bestMatchIndices,
                                      uint64_t *bestMatchSSDs) {
   // Assuming each block processes one keypoint from keypointsL
-  int keypointIdx = blockIdx.x;
+  int keypointIdx = blockIdx.x * blockDim.x + threadIdx.x;
   if (keypointIdx >= numKpsL)
     return;
-
-  // Shared memory for the patch in image1GPU
-  extern __shared__ uchar3 sharedPatch[];
 
   int patchSize = cuPatchSize;
 
@@ -99,64 +96,36 @@ __global__ void matchKeypointsKernel(const float *kpsL_x, const float *kpsL_y,
   float pos1_y = kpsL_y[keypointIdx];
   const int border = patchSize / 2;
 
-  // Each thread in the block loads part of the patch into shared memory
-  int lx = threadIdx.x;
-  int ly = threadIdx.y;
-  int globalX = pos1_x - border + lx;
-  int globalY = pos1_y - border + ly;
-
-  if (globalX >= 0 && globalX < numImage1Cols && globalY >= 0 &&
-      globalY < numImage1Rows) {
-    uchar4 p1 = tex2D(texImage1, globalX, globalY);
-    sharedPatch[ly * patchSize + lx] = make_uchar3(p1.x, p1.y, p1.z);
-  }
-
-  __syncthreads();
-
   // SSD calculation for the current keypoint against all keypoints in
   // keypointsR
-  if (lx < patchSize && ly < patchSize) {
-    int bestMatchIndex = -1;
-    uint64_t bestMatchSSD = 0xffffffffffffffff;
-    for (int j = 0; j < numKpsR; ++j) {
-      float pos2_x = kpsR_x[j];
-      float pos2_y = kpsR_y[j];
+  int bestMatchIndex = -1;
+  uint64_t bestMatchSSD = 0xffffffffffffffff;
+  for (int j = 0; j < numKpsR; ++j) {
+    float pos2_x = kpsR_x[j];
+    float pos2_y = kpsR_y[j];
 
-      // Compute SSD
-      uint64_t ssd = 0;
-      for (int dy = -border; dy <= border; ++dy) {
-        for (int dx = -border; dx <= border; ++dx) {
-          uchar3 p1 =
-              sharedPatch[(ly + dy + border) * patchSize + (lx + dx + border)];
-          int globalX2 = pos2_x + dx;
-          int globalY2 = pos2_y + dy;
-          uchar3 p2 = make_uchar3(0, 0, 0);
-          if (globalX2 >= 0 && globalX2 < numImage2Cols && globalY2 >= 0 &&
-              globalY2 < numImage2Rows) {
-            uchar4 p2_ = tex2D(texImage2, globalX2, globalY2);
-            p2 = make_uchar3(p2_.x, p2_.y, p2_.z);
-          }
+    // Compute SSD
+    uint64_t ssd = 0;
+    for (int dy = -border; dy <= border; ++dy) {
+      for (int dx = -border; dx <= border; ++dx) {
+        uchar4 p1 = tex2D(texImage1, pos1_x + dx, pos1_y + dy);
+        uchar4 p2 = tex2D(texImage2, pos2_x + dx, pos2_y + dy);
 
-          uint64_t diff = (p1.x - p2.x) * (p1.x - p2.x) +
-                          (p1.y - p2.y) * (p1.y - p2.y) +
-                          (p1.z - p2.z) * (p1.z - p2.z);
-          ssd += diff * diff;
-        }
-      }
-
-      if (ssd < bestMatchSSD) {
-        bestMatchSSD = ssd;
-        bestMatchIndex = j;
+        ssd += (p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y) +
+               (p1.z - p2.z) * (p1.z - p2.z);
       }
     }
 
-    // Store the best match for this keypoint
-    if (threadIdx.x == 0 && threadIdx.y == 0) {
-      if (bestMatchSSD < cuMaxSSDThreash) {
-        bestMatchIndices[keypointIdx] = bestMatchIndex;
-        bestMatchSSDs[keypointIdx] = bestMatchSSD;
-      }
+    if (ssd < bestMatchSSD) {
+      bestMatchSSD = ssd;
+      bestMatchIndex = j;
     }
+  }
+
+  // Store the best match for this keypoint
+  if (bestMatchSSD < cuMaxSSDThreash) {
+    bestMatchIndices[keypointIdx] = bestMatchIndex;
+    bestMatchSSDs[keypointIdx] = bestMatchSSD;
   }
 }
 
@@ -226,12 +195,10 @@ std::vector<cv::DMatch> CudaHarrisKeypointMatcher::matchKeyPoints(
   CUDA_CHECK(
       cudaMemset(d_bestMatchSSDs, -1, keypointsL.size() * sizeof(double)));
 
-  int numBlocks = keypointsL.size();
-  dim3 blockSize(patchSize, patchSize);
-  int sharedMemSize = patchSize * patchSize * sizeof(uchar3);
+  int threadsPerBlock = 256;
+  int numBlocks = (keypointsL.size() + threadsPerBlock - 1) / threadsPerBlock;
 
-  matchKeypointsKernel<<<numBlocks, dim3(patchSize, patchSize),
-                         sharedMemSize>>>(
+  matchKeypointsKernel<<<numBlocks, threadsPerBlock>>>(
       d_kpsL_X, d_kpsL_Y, d_kpsR_X, d_kpsR_Y, image1_.rows, image1_.cols,
       image2_.rows, image2_.cols, keypointsL.size(), keypointsR.size(),
       d_bestMatchIndices, d_bestMatchSSDs);
