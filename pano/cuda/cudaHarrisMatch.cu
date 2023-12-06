@@ -15,6 +15,9 @@
     }                                                                          \
   } while (0)
 
+__constant__ int cuPatchSize;
+__constant__ uint64_t cuMaxSSDThreash;
+
 CudaHarrisKeypointMatcher::CudaHarrisKeypointMatcher(
     cv::Mat &image1, cv::Mat &image2, HarrisCornerOptions options)
     : image1_(image1), image2_(image2), options_(options) {}
@@ -23,8 +26,7 @@ __global__ void matchKeypointsKernel(
     const float *kpsL_x, const float *kpsL_y, const float *kpsR_x,
     const float *kpsR_y, uchar3 *image1GPU, uchar3 *image2GPU,
     int numImage1Rows, int numImage1Cols, int numImage2Rows, int numImage2Cols,
-    int numKpsL, int numKpsR, int *bestMatchIndices, uint64_t *bestMatchSSDs,
-    const int patchSize, const int maxSSDThresh) {
+    int numKpsL, int numKpsR, int *bestMatchIndices, uint64_t *bestMatchSSDs) {
   // Assuming each block processes one keypoint from keypointsL
   int keypointIdx = blockIdx.x;
   if (keypointIdx >= numKpsL)
@@ -32,6 +34,8 @@ __global__ void matchKeypointsKernel(
 
   // Shared memory for the patch in image2GPU
   extern __shared__ uchar3 sharedPatch[];
+
+  int patchSize = cuPatchSize;
 
   float pos1_x = kpsL_x[keypointIdx];
   float pos1_y = kpsL_y[keypointIdx];
@@ -88,7 +92,7 @@ __global__ void matchKeypointsKernel(
 
     // Store the best match for this keypoint
     if (threadIdx.x == 0 && threadIdx.y == 0) {
-      if (bestMatchSSD < maxSSDThresh) {
+      if (bestMatchSSD < cuMaxSSDThreash) {
         bestMatchIndices[keypointIdx] = bestMatchIndex;
         bestMatchSSDs[keypointIdx] = bestMatchSSD;
       }
@@ -108,7 +112,13 @@ std::vector<cv::DMatch> CudaHarrisKeypointMatcher::matchKeyPoints(
     std::vector<cv::KeyPoint> keypointsR) {
   // options
   const int patchSize = options_.patchSize_;
-  const double maxSSDThresh = options_.maxSSDThresh_;
+  const uint64_t maxSSDThresh = options_.maxSSDThresh_;
+
+  // copy to __constant__
+  CUDA_CHECK(cudaMemcpyToSymbol(cuMaxSSDThreash, &maxSSDThresh,
+                                sizeof(uint64_t), 0, cudaMemcpyHostToDevice));
+  CUDA_CHECK(cudaMemcpyToSymbol(cuPatchSize, &patchSize, sizeof(int), 0,
+                                cudaMemcpyHostToDevice));
 
   std::vector<cv::DMatch> matches;
 
@@ -174,8 +184,7 @@ std::vector<cv::DMatch> CudaHarrisKeypointMatcher::matchKeyPoints(
                          sharedMemSize>>>(
       d_kpsL_X, d_kpsL_Y, d_kpsR_X, d_kpsR_Y, d_image1, d_image2, image1_.rows,
       image1_.cols, image2_.rows, image2_.cols, keypointsL.size(),
-      keypointsR.size(), d_bestMatchIndices, d_bestMatchSSDs, patchSize,
-      maxSSDThresh);
+      keypointsR.size(), d_bestMatchIndices, d_bestMatchSSDs);
   cudaError_t kernelError = cudaGetLastError();
   if (kernelError != cudaSuccess) {
     printf("Kernel Error: %s\n", cudaGetErrorString(kernelError));
