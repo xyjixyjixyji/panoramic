@@ -15,84 +15,118 @@
     }                                                                          \
   } while (0)
 
+__constant__ int cuPatchSize;
+__constant__ uint64_t cuMaxSSDThreash;
+
+cudaTextureObject_t texImage1;
+cudaTextureObject_t texImage2;
+
+void createTextureObject(cudaTextureObject_t &texObj, cudaArray *cuArray) {
+  cudaResourceDesc resDesc;
+  memset(&resDesc, 0, sizeof(resDesc));
+  resDesc.resType = cudaResourceTypeArray;
+  resDesc.res.array.array = cuArray;
+
+  cudaTextureDesc texDesc;
+  memset(&texDesc, 0, sizeof(texDesc));
+  texDesc.addressMode[0] = cudaAddressModeWrap;
+  texDesc.addressMode[1] = cudaAddressModeWrap;
+  texDesc.filterMode = cudaFilterModePoint;
+  texDesc.normalizedCoords = false;
+
+  CUDA_CHECK(cudaCreateTextureObject(&texObj, &resDesc, &texDesc, nullptr));
+}
+
 CudaHarrisKeypointMatcher::CudaHarrisKeypointMatcher(
     cv::Mat &image1, cv::Mat &image2, HarrisCornerOptions options)
-    : image1_(image1), image2_(image2), options_(options) {}
+    : image1_(image1), image2_(image2), options_(options) {
+  auto cudaChennelDesc = cudaCreateChannelDesc<uchar4>();
+  cudaArray *cuArray1, *cuArray2;
+  cudaMallocArray(&cuArray1, &cudaChennelDesc, image1_.cols, image1_.rows);
+  cudaMallocArray(&cuArray2, &cudaChennelDesc, image2_.cols, image2_.rows);
+
+  uchar4 *convertedImage1 = new uchar4[image1_.cols * image1_.rows];
+  for (int i = 0; i < image1_.rows; ++i) {
+    for (int j = 0; j < image1_.cols; ++j) {
+      cv::Vec3b pixel = image1_.at<cv::Vec3b>(i, j);
+      convertedImage1[i * image1_.cols + j] =
+          make_uchar4(pixel[0], pixel[1], pixel[2], 0);
+    }
+  }
+  cudaMemcpy2DToArray(
+      cuArray1, 0, 0, convertedImage1, image1_.cols * sizeof(uchar4),
+      image1_.cols * sizeof(uchar4), image1_.rows, cudaMemcpyHostToDevice);
+  delete convertedImage1;
+
+  uchar4 *convertedImage2 = new uchar4[image2_.cols * image2_.rows];
+  for (int i = 0; i < image2_.rows; ++i) {
+    for (int j = 0; j < image2_.cols; ++j) {
+      cv::Vec3b pixel = image2_.at<cv::Vec3b>(i, j);
+      convertedImage2[i * image2_.cols + j] =
+          make_uchar4(pixel[0], pixel[1], pixel[2], 0);
+    }
+  }
+  cudaMemcpy2DToArray(
+      cuArray2, 0, 0, convertedImage2, image2_.cols * sizeof(uchar4),
+      image2_.cols * sizeof(uchar4), image2_.rows, cudaMemcpyHostToDevice);
+  delete convertedImage2;
+
+  createTextureObject(texImage1, cuArray1);
+  createTextureObject(texImage2, cuArray2);
+}
+
+CudaHarrisKeypointMatcher::~CudaHarrisKeypointMatcher() {
+  CUDA_CHECK(cudaDestroyTextureObject(texImage1));
+  CUDA_CHECK(cudaDestroyTextureObject(texImage2));
+}
 
 __global__ void matchKeypointsKernel(
     const float *kpsL_x, const float *kpsL_y, const float *kpsR_x,
-    const float *kpsR_y, uchar3 *image1GPU, uchar3 *image2GPU,
-    int numImage1Rows, int numImage1Cols, int numImage2Rows, int numImage2Cols,
-    int numKpsL, int numKpsR, int *bestMatchIndices, uint64_t *bestMatchSSDs,
-    const int patchSize, const int maxSSDThresh) {
+    const float *kpsR_y, cudaTextureObject_t texImage1,
+    cudaTextureObject_t texImage2, int numImage1Rows, int numImage1Cols,
+    int numImage2Rows, int numImage2Cols, int numKpsL, int numKpsR,
+    int *bestMatchIndices, uint64_t *bestMatchSSDs) {
   // Assuming each block processes one keypoint from keypointsL
-  int keypointIdx = blockIdx.x;
+  int keypointIdx = blockIdx.x * blockDim.x + threadIdx.x;
   if (keypointIdx >= numKpsL)
     return;
 
-  // Shared memory for the patch in image2GPU
-  extern __shared__ uchar3 sharedPatch[];
+  int patchSize = cuPatchSize;
 
   float pos1_x = kpsL_x[keypointIdx];
   float pos1_y = kpsL_y[keypointIdx];
   const int border = patchSize / 2;
 
-  // Each thread in the block loads part of the patch into shared memory
-  int lx = threadIdx.x;
-  int ly = threadIdx.y;
-  int globalX = pos1_x - border + lx;
-  int globalY = pos1_y - border + ly;
-
-  if (globalX >= 0 && globalX < numImage1Cols && globalY >= 0 &&
-      globalY < numImage1Rows) {
-    sharedPatch[ly * patchSize + lx] =
-        image1GPU[globalY * numImage1Cols + globalX];
-  }
-
-  __syncthreads();
-
   // SSD calculation for the current keypoint against all keypoints in
   // keypointsR
-  if (lx < patchSize && ly < patchSize) {
-    int bestMatchIndex = -1;
-    uint64_t bestMatchSSD = 0xffffffffffffffff;
-    for (int j = 0; j < numKpsR; ++j) {
-      float pos2_x = kpsR_x[j];
-      float pos2_y = kpsR_y[j];
+  int bestMatchIndex = -1;
+  uint64_t bestMatchSSD = 0xffffffffffffffff;
+  for (int j = 0; j < numKpsR; ++j) {
+    float pos2_x = kpsR_x[j];
+    float pos2_y = kpsR_y[j];
 
-      // Compute SSD
-      uint64_t ssd = 0;
-      for (int dy = -border; dy <= border; ++dy) {
-        for (int dx = -border; dx <= border; ++dx) {
-          uchar3 p1 =
-              sharedPatch[(ly + dy + border) * patchSize + (lx + dx + border)];
-          int globalX2 = pos2_x + dx;
-          int globalY2 = pos2_y + dy;
-          uchar3 p2 = (globalX2 >= 0 && globalX2 < numImage2Cols &&
-                       globalY2 >= 0 && globalY2 < numImage2Rows)
-                          ? image2GPU[globalY2 * numImage2Cols + globalX2]
-                          : make_uchar3(0, 0, 0);
+    // Compute SSD
+    uint64_t ssd = 0;
+    for (int dy = -border; dy <= border; ++dy) {
+      for (int dx = -border; dx <= border; ++dx) {
+        uchar4 p1 = tex2D<uchar4>(texImage1, pos1_x + dx, pos1_y + dy);
+        uchar4 p2 = tex2D<uchar4>(texImage2, pos2_x + dx, pos2_y + dy);
 
-          uint64_t diff = (p1.x - p2.x) * (p1.x - p2.x) +
-                          (p1.y - p2.y) * (p1.y - p2.y) +
-                          (p1.z - p2.z) * (p1.z - p2.z);
-          ssd += diff;
-        }
-      }
-
-      if (ssd < bestMatchSSD) {
-        bestMatchSSD = ssd;
-        bestMatchIndex = j;
+        ssd += (p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y) +
+               (p1.z - p2.z) * (p1.z - p2.z);
       }
     }
 
-    // Store the best match for this keypoint
-    if (threadIdx.x == 0 && threadIdx.y == 0) {
-      if (bestMatchSSD < maxSSDThresh) {
-        bestMatchIndices[keypointIdx] = bestMatchIndex;
-        bestMatchSSDs[keypointIdx] = bestMatchSSD;
-      }
+    if (ssd < bestMatchSSD) {
+      bestMatchSSD = ssd;
+      bestMatchIndex = j;
     }
+  }
+
+  // Store the best match for this keypoint
+  if (bestMatchSSD < cuMaxSSDThreash) {
+    bestMatchIndices[keypointIdx] = bestMatchIndex;
+    bestMatchSSDs[keypointIdx] = bestMatchSSD;
   }
 }
 
@@ -108,7 +142,13 @@ std::vector<cv::DMatch> CudaHarrisKeypointMatcher::matchKeyPoints(
     std::vector<cv::KeyPoint> keypointsR) {
   // options
   const int patchSize = options_.patchSize_;
-  const double maxSSDThresh = options_.maxSSDThresh_;
+  const uint64_t maxSSDThresh = options_.maxSSDThresh_;
+
+  // copy to __constant__
+  CUDA_CHECK(cudaMemcpyToSymbol(cuMaxSSDThreash, &maxSSDThresh,
+                                sizeof(uint64_t), 0, cudaMemcpyHostToDevice));
+  CUDA_CHECK(cudaMemcpyToSymbol(cuPatchSize, &patchSize, sizeof(int), 0,
+                                cudaMemcpyHostToDevice));
 
   std::vector<cv::DMatch> matches;
 
@@ -124,17 +164,6 @@ std::vector<cv::DMatch> CudaHarrisKeypointMatcher::matchKeyPoints(
   }
 
   // memory allocation
-  // Allocate memory for keypoints on GPU
-  uchar3 *d_image1;
-  uchar3 *d_image2;
-  int numPixels = image1_.rows * image1_.cols;
-  cudaMalloc(&d_image1, numPixels * sizeof(uchar3));
-  cudaMalloc(&d_image2, numPixels * sizeof(uchar3));
-  cudaMemcpy(d_image1, image1_.ptr(), numPixels * sizeof(uchar3),
-             cudaMemcpyHostToDevice);
-  cudaMemcpy(d_image2, image2_.ptr(), numPixels * sizeof(uchar3),
-             cudaMemcpyHostToDevice);
-
   float *d_kpsL_X, *d_kpsL_Y, *d_kpsR_X, *d_kpsR_Y;
   CUDA_CHECK(cudaMalloc(&d_kpsL_X, keypointsL.size() * sizeof(float)));
   CUDA_CHECK(cudaMalloc(&d_kpsL_Y, keypointsL.size() * sizeof(float)));
@@ -167,15 +196,13 @@ std::vector<cv::DMatch> CudaHarrisKeypointMatcher::matchKeyPoints(
   CUDA_CHECK(
       cudaMemset(d_bestMatchSSDs, -1, keypointsL.size() * sizeof(double)));
 
-  int numBlocks = keypointsL.size();
-  dim3 blockSize(patchSize, patchSize);
-  int sharedMemSize = patchSize * patchSize * sizeof(uchar3);
-  matchKeypointsKernel<<<numBlocks, dim3(patchSize, patchSize),
-                         sharedMemSize>>>(
-      d_kpsL_X, d_kpsL_Y, d_kpsR_X, d_kpsR_Y, d_image1, d_image2, image1_.rows,
-      image1_.cols, image2_.rows, image2_.cols, keypointsL.size(),
-      keypointsR.size(), d_bestMatchIndices, d_bestMatchSSDs, patchSize,
-      maxSSDThresh);
+  int threadsPerBlock = 256;
+  int numBlocks = (keypointsL.size() + threadsPerBlock - 1) / threadsPerBlock;
+
+  matchKeypointsKernel<<<numBlocks, threadsPerBlock>>>(
+      d_kpsL_X, d_kpsL_Y, d_kpsR_X, d_kpsR_Y, texImage1, texImage2,
+      image1_.rows, image1_.cols, image2_.rows, image2_.cols, keypointsL.size(),
+      keypointsR.size(), d_bestMatchIndices, d_bestMatchSSDs);
   cudaError_t kernelError = cudaGetLastError();
   if (kernelError != cudaSuccess) {
     printf("Kernel Error: %s\n", cudaGetErrorString(kernelError));

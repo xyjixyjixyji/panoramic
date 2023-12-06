@@ -94,6 +94,9 @@ public:
   CudaHarrisKeypointMatcher(cv::Mat &image1, cv::Mat &image2,
                             HarrisCornerOptions options);
 
+  // destructor
+  ~CudaHarrisKeypointMatcher();
+
   // Match keypoints detected by Harris corner detector
   std::vector<cv::DMatch>
   matchKeyPoints(std::vector<cv::KeyPoint> keypointsL,
