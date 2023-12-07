@@ -18,75 +18,83 @@
 CudaHarrisCornerDetector::CudaHarrisCornerDetector(HarrisCornerOptions options)
     : options_(options) {}
 
-__global__ void convolveKernel(const double* input, double* output, 
-  const double* kernel, const int kernelSize, const int inputRow, const int inputCol) {
-    int y = blockIdx.x * blockDim.x + threadIdx.x;
-    int x = blockIdx.y * blockDim.y + threadIdx.y;
+__global__ void convolveKernel(const double *input, double *output,
+                               const double *kernel, const int kernelSize,
+                               const int inputRow, const int inputCol) {
+  int y = blockIdx.x * blockDim.x + threadIdx.x;
+  int x = blockIdx.y * blockDim.y + threadIdx.y;
 
-    int k = kernelSize / 2;
-    if (y * inputCol + x >= inputRow * inputCol) return;
-    if ((y < k || y >= inputRow - k) || (x < k || x >= inputCol - k)) {
-      output[y * inputCol + x] = 0.0;
-      return;
-    }
+  int k = kernelSize / 2;
+  if (y * inputCol + x >= inputRow * inputCol)
+    return;
+  if ((y < k || y >= inputRow - k) || (x < k || x >= inputCol - k)) {
+    output[y * inputCol + x] = 0.0;
+    return;
+  }
 
-    double sum = 0.0;
-    for (int i = -k; i <= k; i++) {
-      for (int j = -k; j <= k; j++) {
-        sum += input[(y + i) * inputCol + x + j] * kernel[(k + i) * kernelSize + k + j];
-      }
+  double sum = 0.0;
+  for (int i = -k; i <= k; i++) {
+    for (int j = -k; j <= k; j++) {
+      sum += input[(y + i) * inputCol + x + j] *
+             kernel[(k + i) * kernelSize + k + j];
     }
-    output[y * inputCol + x] = sum;
+  }
+  output[y * inputCol + x] = sum;
 }
 
-__global__ void elemWiseMulKernel(const double* x, const double* y, 
-  double* xx, double* yy, double* xy, const int size) {
+__global__ void elemWiseMulKernel(const double *x, const double *y, double *xx,
+                                  double *yy, double *xy, const int size) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
-  if (i >= size) return;
+  if (i >= size)
+    return;
   xx[i] = x[i] * x[i];
   yy[i] = y[i] * y[i];
   xy[i] = x[i] * y[i];
 }
 
-__global__ void harrisRespKernel(const double* XX, const double* YY, const double* XY, 
-  double* harrisResp, const int size, const int k) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx >= size) return;
+__global__ void harrisRespKernel(const double *XX, const double *YY,
+                                 const double *XY, double *harrisResp,
+                                 const int size, const int k) {
+  int idx = blockIdx.x * blockDim.x + threadIdx.x;
+  if (idx >= size)
+    return;
 
-    double det = XX[idx] * YY[idx] - XY[idx] * XY[idx];
-    double trace = XX[idx] + YY[idx];
-    harrisResp[idx] = det - k * trace * trace;
+  double det = XX[idx] * YY[idx] - XY[idx] * XY[idx];
+  double trace = XX[idx] + YY[idx];
+  harrisResp[idx] = det - k * trace * trace;
 }
 
-__global__ void findKeypointKernel(const double* harrisResp, bool* isKeypoint, 
-  const int thresh, const int halfLen, const int inputRow, const int inputCol) {
-    int y = blockIdx.x * blockDim.x + threadIdx.x;
-    int x = blockIdx.y * blockDim.y + threadIdx.y;
-    
-    if (y < halfLen || y >= inputRow - halfLen) return;
-    if (x < halfLen || x >= inputCol - halfLen) return;
+__global__ void findKeypointKernel(const double *harrisResp, bool *isKeypoint,
+                                   const int thresh, const int halfLen,
+                                   const int inputRow, const int inputCol) {
+  int y = blockIdx.x * blockDim.x + threadIdx.x;
+  int x = blockIdx.y * blockDim.y + threadIdx.y;
 
-    double resp = harrisResp[y * inputCol + x];
-    if (resp <= thresh)
-      return;
+  if (y < halfLen || y >= inputRow - halfLen)
+    return;
+  if (x < halfLen || x >= inputCol - halfLen)
+    return;
 
-    double max_resp, cur_resp;
-    (*((uint64_t*)&max_resp))= ~(1LL<<52);
+  double resp = harrisResp[y * inputCol + x];
+  if (resp <= thresh)
+    return;
 
-    for (int i = -halfLen; i <= halfLen; i++) {
-      for (int j = -halfLen; j <= halfLen; j++) {
-        if (i == 0 && j == 0)
-          continue;
-        cur_resp = harrisResp[(y + i) * inputCol + x + j];
-        if (cur_resp > max_resp)
-          max_resp = cur_resp;
-      }
+  double max_resp, cur_resp;
+  (*((uint64_t *)&max_resp)) = ~(1LL << 52);
+
+  for (int i = -halfLen; i <= halfLen; i++) {
+    for (int j = -halfLen; j <= halfLen; j++) {
+      if (i == 0 && j == 0)
+        continue;
+      cur_resp = harrisResp[(y + i) * inputCol + x + j];
+      if (cur_resp > max_resp)
+        max_resp = cur_resp;
     }
+  }
 
-    if (resp > max_resp) {
-      isKeypoint[y * inputCol + x] = true;
-    }
-
+  if (resp > max_resp) {
+    isKeypoint[y * inputCol + x] = true;
+  }
 }
 
 std::vector<double> flattenMatrix(std::vector<std::vector<double>> &mat) {
@@ -95,7 +103,7 @@ std::vector<double> flattenMatrix(std::vector<std::vector<double>> &mat) {
   std::vector<double> flatMat(row * col);
   for (int i = 0; i < row; i++) {
     for (int j = 0; j < col; j++) {
-      flatMat[i*col + j] = mat[i][j];
+      flatMat[i * col + j] = mat[i][j];
     }
   }
   return flatMat;
@@ -110,7 +118,8 @@ std::vector<double> flattenMatrix(std::vector<std::vector<double>> &mat) {
 std::vector<cv::KeyPoint>
 CudaHarrisCornerDetector::detect(const cv::Mat &image) {
 
-  /* =============================== PART 1: CONVERT IMAGE =======================*/
+  /* =============================== PART 1: CONVERT IMAGE
+   * =======================*/
   // Ensure the image is grayscale
   cv::Mat gray;
   if (image.channels() == 3) {
@@ -138,7 +147,7 @@ CudaHarrisCornerDetector::detect(const cv::Mat &image) {
 
   /* For kernels on 2D things. */
   dim3 blockSize(16, 16);
-  dim3 gridSize((imgRow + blockSize.x - 1) / blockSize.x, 
+  dim3 gridSize((imgRow + blockSize.x - 1) / blockSize.x,
                 (imgCol + blockSize.y - 1) / blockSize.y);
 
   /* =============================== PART 2: CONVOLVE =======================*/
@@ -153,14 +162,17 @@ CudaHarrisCornerDetector::detect(const cv::Mat &image) {
   /* Copy matrices to device. */
   double *d_flatSobelX, *d_flatSobelY, *d_flatGaussian;
   CUDA_CHECK(cudaMalloc(&d_flatSobelX, flatSobelX.size() * sizeof(double)));
-  CUDA_CHECK(cudaMemcpy(d_flatSobelX, flatSobelX.data(), 
-          flatSobelX.size() * sizeof(double), cudaMemcpyHostToDevice));
+  CUDA_CHECK(cudaMemcpy(d_flatSobelX, flatSobelX.data(),
+                        flatSobelX.size() * sizeof(double),
+                        cudaMemcpyHostToDevice));
   CUDA_CHECK(cudaMalloc(&d_flatSobelY, flatSobelY.size() * sizeof(double)));
-  CUDA_CHECK(cudaMemcpy(d_flatSobelY, flatSobelY.data(), 
-          flatSobelY.size() * sizeof(double), cudaMemcpyHostToDevice));
+  CUDA_CHECK(cudaMemcpy(d_flatSobelY, flatSobelY.data(),
+                        flatSobelY.size() * sizeof(double),
+                        cudaMemcpyHostToDevice));
   CUDA_CHECK(cudaMalloc(&d_flatGaussian, flatGaussian.size() * sizeof(double)));
-  CUDA_CHECK(cudaMemcpy(d_flatGaussian, flatGaussian.data(), 
-          flatGaussian.size() * sizeof(double), cudaMemcpyHostToDevice));
+  CUDA_CHECK(cudaMemcpy(d_flatGaussian, flatGaussian.data(),
+                        flatGaussian.size() * sizeof(double),
+                        cudaMemcpyHostToDevice));
 
   /* Convolve */
   double *d_img, *d_gradX, *d_gradY;
@@ -175,36 +187,40 @@ CudaHarrisCornerDetector::detect(const cv::Mat &image) {
   CUDA_CHECK(cudaMalloc(&d_gradXX, imgSize * sizeof(double)));
   CUDA_CHECK(cudaMalloc(&d_gradYY, imgSize * sizeof(double)));
   CUDA_CHECK(cudaMalloc(&d_gradXY, imgSize * sizeof(double)));
-  CUDA_CHECK(cudaMemcpy(d_img, img, imgSize * sizeof(double), cudaMemcpyHostToDevice));
+  CUDA_CHECK(
+      cudaMemcpy(d_img, img, imgSize * sizeof(double), cudaMemcpyHostToDevice));
 
   // Compute gradX
-  convolveKernel<<<gridSize, blockSize>>>(d_img, d_gradX, d_flatSobelX, 
-    sobelXKernel.size(), imgRow, imgCol);
+  convolveKernel<<<gridSize, blockSize>>>(d_img, d_gradX, d_flatSobelX,
+                                          sobelXKernel.size(), imgRow, imgCol);
   // CUDA_CHECK(cudaDeviceSynchronize()); // TODO check if could be deleted
 
   // Compute gradY
-  convolveKernel<<<gridSize, blockSize>>>(d_img, d_gradY, d_flatSobelY, 
-    sobelYKernel.size(), imgRow, imgCol);
+  convolveKernel<<<gridSize, blockSize>>>(d_img, d_gradY, d_flatSobelY,
+                                          sobelYKernel.size(), imgRow, imgCol);
   CUDA_CHECK(cudaDeviceSynchronize());
 
   // Calculate element wise multiplication XX YY XY
-  elemWiseMulKernel<<<numBlocks, threadsPerBlock>>>(d_gradX, d_gradY, 
-    d_gradXXMid, d_gradYYMid, d_gradXYMid, imgSize);
-  CUDA_CHECK(cudaDeviceSynchronize()); 
+  elemWiseMulKernel<<<numBlocks, threadsPerBlock>>>(
+      d_gradX, d_gradY, d_gradXXMid, d_gradYYMid, d_gradXYMid, imgSize);
+  CUDA_CHECK(cudaDeviceSynchronize());
 
   // Get gradXX
-  convolveKernel<<<gridSize, blockSize>>>(d_gradXXMid, d_gradXX, d_flatGaussian, 
-    gaussianKernel.size(), imgRow, imgCol);
+  convolveKernel<<<gridSize, blockSize>>>(d_gradXXMid, d_gradXX, d_flatGaussian,
+                                          gaussianKernel.size(), imgRow,
+                                          imgCol);
   // CUDA_CHECK(cudaDeviceSynchronize());  // TODO check if could be deleted
 
   // Get gradYY
-  convolveKernel<<<gridSize, blockSize>>>(d_gradYYMid, d_gradYY, d_flatGaussian, 
-    gaussianKernel.size(), imgRow, imgCol);
+  convolveKernel<<<gridSize, blockSize>>>(d_gradYYMid, d_gradYY, d_flatGaussian,
+                                          gaussianKernel.size(), imgRow,
+                                          imgCol);
   // CUDA_CHECK(cudaDeviceSynchronize());  // TODO check if could be deleted
 
   // Get gradXY
-  convolveKernel<<<gridSize, blockSize>>>(d_gradXYMid, d_gradXY, d_flatGaussian, 
-    gaussianKernel.size(), imgRow, imgCol);
+  convolveKernel<<<gridSize, blockSize>>>(d_gradXYMid, d_gradXY, d_flatGaussian,
+                                          gaussianKernel.size(), imgRow,
+                                          imgCol);
   CUDA_CHECK(cudaDeviceSynchronize());
 
   CUDA_CHECK(cudaFree(d_img));
@@ -217,29 +233,33 @@ CudaHarrisCornerDetector::detect(const cv::Mat &image) {
   CUDA_CHECK(cudaFree(d_flatSobelY));
   CUDA_CHECK(cudaFree(d_flatGaussian));
 
-  /*=============================== PART 3: BUILD HARRISRESP ===============================*/
+  /*=============================== PART 3: BUILD HARRISRESP
+   * ===============================*/
   double *d_harrisResp;
   CUDA_CHECK(cudaMalloc(&d_harrisResp, imgSize * sizeof(double)));
-  
+
   harrisRespKernel<<<numBlocks, threadsPerBlock>>>(
-    d_gradXX, d_gradYY, d_gradXY, d_harrisResp, imgSize, options_.k_);
+      d_gradXX, d_gradYY, d_gradXY, d_harrisResp, imgSize, options_.k_);
   CUDA_CHECK(cudaDeviceSynchronize());
 
   CUDA_CHECK(cudaFree(d_gradXX));
   CUDA_CHECK(cudaFree(d_gradYY));
   CUDA_CHECK(cudaFree(d_gradXY));
 
-  /*=============================== PART 4: FIND KEYPOINTS ===============================*/
+  /*=============================== PART 4: FIND KEYPOINTS
+   * ===============================*/
   // Non-maximum suppression
   bool *d_isKeypoint; // set to all false initially
   CUDA_CHECK(cudaMalloc(&d_isKeypoint, imgSize * sizeof(bool)));
   CUDA_CHECK(cudaMemset(d_isKeypoint, false, imgSize * sizeof(bool)));
 
-  bool* isKeypoint = new bool[imgSize];
-  findKeypointKernel<<<gridSize, blockSize>>>(d_harrisResp, d_isKeypoint,
-    options_.nmsThresh_, options_.nmsNeighborhood_ / 2, imgRow, imgCol);
+  bool *isKeypoint = new bool[imgSize];
+  findKeypointKernel<<<gridSize, blockSize>>>(
+      d_harrisResp, d_isKeypoint, options_.nmsThresh_,
+      options_.nmsNeighborhood_ / 2, imgRow, imgCol);
   CUDA_CHECK(cudaDeviceSynchronize());
-  CUDA_CHECK(cudaMemcpy(isKeypoint, d_isKeypoint, imgSize * sizeof(bool), cudaMemcpyDeviceToHost));
+  CUDA_CHECK(cudaMemcpy(isKeypoint, d_isKeypoint, imgSize * sizeof(bool),
+                        cudaMemcpyDeviceToHost));
 
   CUDA_CHECK(cudaFree(d_harrisResp));
   CUDA_CHECK(cudaFree(d_isKeypoint));
@@ -254,5 +274,4 @@ CudaHarrisCornerDetector::detect(const cv::Mat &image) {
     }
   }
   return keypoints;
-
 }
