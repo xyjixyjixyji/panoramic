@@ -24,8 +24,11 @@ __global__ void convolveKernel(const double* input, double* output,
     int x = blockIdx.y * blockDim.y + threadIdx.y;
 
     int k = kernelSize / 2;
-    if (y < k || y >= inputRow - k) return;
-    if (x < k || x >= inputCol - k) return;
+    if (y * inputCol + x >= inputRow * inputCol) return;
+    if ((y < k || y >= inputRow - k) || (x < k || x >= inputCol - k)) {
+      output[y * inputCol + x] = 0.0; // reset value since we reuse the structure
+      return;
+    }
 
     double sum = 0.0;
     for (int i = -k; i <= k; i++) {
@@ -36,10 +39,18 @@ __global__ void convolveKernel(const double* input, double* output,
     output[y * inputCol + x] = sum;
 }
 
+__global__ void elemWiseMulKernel(const double* x, const double* y, 
+  double* xx, double* yy, double* xy, const int size) {
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= size) return;
+  xx[i] = x[i] * x[i];
+  yy[i] = y[i] * y[i];
+  xy[i] = x[i] * y[i];
+}
+
 __global__ void harrisRespKernel(const double* XX, const double* YY, const double* XY, 
   double* harrisResp, const int size, const int k) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
-
     if (idx >= size) return;
 
     double det = XX[idx] * YY[idx] - XY[idx] * XY[idx];
@@ -51,7 +62,7 @@ __global__ void findKeypointKernel(const double* harrisResp, bool* isKeypoint,
   const int thresh, const int halfLen, const int inputRow, const int inputCol) {
     int y = blockIdx.x * blockDim.x + threadIdx.x;
     int x = blockIdx.y * blockDim.y + threadIdx.y;
-
+    
     if (y < halfLen || y >= inputRow - halfLen) return;
     if (x < halfLen || x >= inputCol - halfLen) return;
 
@@ -90,14 +101,6 @@ std::vector<double> flattenMatrix(std::vector<std::vector<double>> &mat) {
   return flatMat;
 }
 
-double* elemWiseMul(std::vector<double> &first, std::vector<double> &second, int size) {
-  double* res = new double[size];
-  for (int i = 0; i < size; ++i) {
-    res[i] = first[i] * second[i];
-  }
-  return res;
-}
-
 /**
  * @brief Detect keypoints in the input image by Harris corner method
  *
@@ -129,11 +132,16 @@ CudaHarrisCornerDetector::detect(const cv::Mat &image) {
     }
   }
 
-  /* =============================== PART 2: CONVOLVE =======================*/
+  /* For kernels on flattened things. */
+  int threadsPerBlock = 256;
+  int numBlocks = (imgSize + threadsPerBlock - 1) / threadsPerBlock;
+
+  /* For kernels on 2D things. */
   dim3 blockSize(16, 16);
   dim3 gridSize((imgRow + blockSize.x - 1) / blockSize.x, 
                 (imgCol + blockSize.y - 1) / blockSize.y);
 
+  /* =============================== PART 2: CONVOLVE =======================*/
   /* Get matrix kernel and flatten. */
   std::vector<std::vector<double>> sobelXKernel = getSobelXKernel();
   std::vector<std::vector<double>> sobelYKernel = getSobelYKernel();
@@ -160,30 +168,42 @@ CudaHarrisCornerDetector::detect(const cv::Mat &image) {
   CUDA_CHECK(cudaMalloc(&d_output, imgSize * sizeof(double)));
 
   // Get gradX
+  double* gradX = new double[imgSize];
   CUDA_CHECK(cudaMemcpy(d_input, img, imgSize * sizeof(double), cudaMemcpyHostToDevice));
-  CUDA_CHECK(cudaMemset(d_output, 0.0, imgSize * sizeof(double)));
   convolveKernel<<<gridSize, blockSize>>>(d_input, d_output, d_flatSobelX, 
     sobelXKernel.size(), imgRow, imgCol);
   CUDA_CHECK(cudaDeviceSynchronize());
-  std::vector<double> gradX(imgSize);
-  CUDA_CHECK(cudaMemcpy(gradX.data(), d_output, imgSize * sizeof(double), cudaMemcpyDeviceToHost));
+  CUDA_CHECK(cudaMemcpy(gradX, d_output, imgSize * sizeof(double), cudaMemcpyDeviceToHost));
 
   // Get gradY
-  CUDA_CHECK(cudaMemset(d_output, 0.0, imgSize * sizeof(double)));
+  double* gradY = new double[imgSize];
   convolveKernel<<<gridSize, blockSize>>>(d_input, d_output, d_flatSobelY, 
     sobelYKernel.size(), imgRow, imgCol);
   CUDA_CHECK(cudaDeviceSynchronize());
-  std::vector<double> gradY(imgSize);
-  CUDA_CHECK(cudaMemcpy(gradY.data(), d_output, imgSize * sizeof(double), cudaMemcpyDeviceToHost));
+  CUDA_CHECK(cudaMemcpy(gradY, d_output, imgSize * sizeof(double), cudaMemcpyDeviceToHost));
 
   // Calculate XX YY XY
-  double* gradXX = elemWiseMul(gradX, gradX, imgSize);
-  double* gradYY = elemWiseMul(gradY, gradY, imgSize);
-  double* gradXY = elemWiseMul(gradX, gradY, imgSize);
+  double *d_gradX, *d_gradY, *d_gradXX, *d_gradYY, *d_gradXY;
+  CUDA_CHECK(cudaMalloc(&d_gradX, imgSize * sizeof(double)));
+  CUDA_CHECK(cudaMalloc(&d_gradY, imgSize * sizeof(double)));
+  CUDA_CHECK(cudaMalloc(&d_gradXX, imgSize * sizeof(double)));
+  CUDA_CHECK(cudaMalloc(&d_gradYY, imgSize * sizeof(double)));
+  CUDA_CHECK(cudaMalloc(&d_gradXY, imgSize * sizeof(double)));
+  CUDA_CHECK(cudaMemcpy(d_gradX, gradX, imgSize * sizeof(double), cudaMemcpyHostToDevice));
+  CUDA_CHECK(cudaMemcpy(d_gradY, gradY, imgSize * sizeof(double), cudaMemcpyHostToDevice));
+
+  double *gradXX = new double[imgSize];
+  double *gradYY = new double[imgSize];
+  double *gradXY = new double[imgSize];
+  elemWiseMulKernel<<<numBlocks, threadsPerBlock>>>(d_gradX, d_gradY, 
+    d_gradXX, d_gradYY, d_gradXY, imgSize);
+  CUDA_CHECK(cudaDeviceSynchronize());
+  CUDA_CHECK(cudaMemcpy(gradXX, d_gradXX, imgSize * sizeof(double), cudaMemcpyDeviceToHost));
+  CUDA_CHECK(cudaMemcpy(gradYY, d_gradYY, imgSize * sizeof(double), cudaMemcpyDeviceToHost));
+  CUDA_CHECK(cudaMemcpy(gradXY, d_gradXY, imgSize * sizeof(double), cudaMemcpyDeviceToHost));
 
   // Get gradXX
   CUDA_CHECK(cudaMemcpy(d_input, gradXX, imgSize * sizeof(double), cudaMemcpyHostToDevice));
-  CUDA_CHECK(cudaMemset(d_output, 0.0, imgSize * sizeof(double)));
   convolveKernel<<<gridSize, blockSize>>>(d_input, d_output, d_flatGaussian, 
     gaussianKernel.size(), imgRow, imgCol);
   CUDA_CHECK(cudaDeviceSynchronize());
@@ -191,7 +211,6 @@ CudaHarrisCornerDetector::detect(const cv::Mat &image) {
 
   // Get gradYY
   CUDA_CHECK(cudaMemcpy(d_input, gradYY, imgSize * sizeof(double), cudaMemcpyHostToDevice));
-  CUDA_CHECK(cudaMemset(d_output, 0.0, imgSize * sizeof(double)));
   convolveKernel<<<gridSize, blockSize>>>(d_input, d_output, d_flatGaussian, 
     gaussianKernel.size(), imgRow, imgCol);
   CUDA_CHECK(cudaDeviceSynchronize());
@@ -199,7 +218,6 @@ CudaHarrisCornerDetector::detect(const cv::Mat &image) {
 
   // Get gradXY
   CUDA_CHECK(cudaMemcpy(d_input, gradXY, imgSize * sizeof(double), cudaMemcpyHostToDevice));
-  CUDA_CHECK(cudaMemset(d_output, 0.0, imgSize * sizeof(double)));
   convolveKernel<<<gridSize, blockSize>>>(d_input, d_output, d_flatGaussian, 
     gaussianKernel.size(), imgRow, imgCol);
   CUDA_CHECK(cudaDeviceSynchronize());
@@ -210,9 +228,6 @@ CudaHarrisCornerDetector::detect(const cv::Mat &image) {
   CUDA_CHECK(cudaFree(d_flatGaussian));
 
   /*=============================== PART 3: BUILD HARRISRESP ===============================*/
-  int threadsPerBlock = 256;
-  int numBlocks = (imgSize + threadsPerBlock - 1) / threadsPerBlock;
-
   double *d_XX, *d_YY, *d_XY;
   CUDA_CHECK(cudaMalloc(&d_XX, imgSize * sizeof(double)));
   CUDA_CHECK(cudaMalloc(&d_YY, imgSize * sizeof(double)));
@@ -220,7 +235,6 @@ CudaHarrisCornerDetector::detect(const cv::Mat &image) {
   CUDA_CHECK(cudaMemcpy(d_XX, gradXX, imgSize * sizeof(double), cudaMemcpyHostToDevice));
   CUDA_CHECK(cudaMemcpy(d_YY, gradYY, imgSize * sizeof(double), cudaMemcpyHostToDevice));
   CUDA_CHECK(cudaMemcpy(d_XY, gradXY, imgSize * sizeof(double), cudaMemcpyHostToDevice));
-  CUDA_CHECK(cudaMemset(d_output, 0.0, imgSize * sizeof(double)));
 
   double* harrisResp = new double[imgSize];
   harrisRespKernel<<<numBlocks, threadsPerBlock>>>(d_XX, d_YY, d_XY, d_output, imgSize, options_.k_);
