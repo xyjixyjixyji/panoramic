@@ -192,32 +192,29 @@ CudaHarrisCornerDetector::detect(const cv::Mat &image) {
   CUDA_CHECK(cudaMemcpy(d_gradX, gradX, imgSize * sizeof(double), cudaMemcpyHostToDevice));
   CUDA_CHECK(cudaMemcpy(d_gradY, gradY, imgSize * sizeof(double), cudaMemcpyHostToDevice));
 
-  double *gradXX = new double[imgSize];
-  double *gradYY = new double[imgSize];
-  double *gradXY = new double[imgSize];
   elemWiseMulKernel<<<numBlocks, threadsPerBlock>>>(d_gradX, d_gradY, 
     d_gradXX, d_gradYY, d_gradXY, imgSize);
   CUDA_CHECK(cudaDeviceSynchronize());
-  CUDA_CHECK(cudaMemcpy(gradXX, d_gradXX, imgSize * sizeof(double), cudaMemcpyDeviceToHost));
-  CUDA_CHECK(cudaMemcpy(gradYY, d_gradYY, imgSize * sizeof(double), cudaMemcpyDeviceToHost));
-  CUDA_CHECK(cudaMemcpy(gradXY, d_gradXY, imgSize * sizeof(double), cudaMemcpyDeviceToHost));
 
   // Get gradXX
-  CUDA_CHECK(cudaMemcpy(d_input, gradXX, imgSize * sizeof(double), cudaMemcpyHostToDevice));
+  double *gradXX = new double[imgSize];
+  CUDA_CHECK(cudaMemcpy(d_input, d_gradXX, imgSize * sizeof(double), cudaMemcpyDeviceToDevice));
   convolveKernel<<<gridSize, blockSize>>>(d_input, d_output, d_flatGaussian, 
     gaussianKernel.size(), imgRow, imgCol);
   CUDA_CHECK(cudaDeviceSynchronize());
   CUDA_CHECK(cudaMemcpy(gradXX, d_output, imgSize * sizeof(double), cudaMemcpyDeviceToHost));
 
   // Get gradYY
-  CUDA_CHECK(cudaMemcpy(d_input, gradYY, imgSize * sizeof(double), cudaMemcpyHostToDevice));
+  double *gradYY = new double[imgSize];
+  CUDA_CHECK(cudaMemcpy(d_input, d_gradYY, imgSize * sizeof(double), cudaMemcpyDeviceToDevice));
   convolveKernel<<<gridSize, blockSize>>>(d_input, d_output, d_flatGaussian, 
     gaussianKernel.size(), imgRow, imgCol);
   CUDA_CHECK(cudaDeviceSynchronize());
   CUDA_CHECK(cudaMemcpy(gradYY, d_output, imgSize * sizeof(double), cudaMemcpyDeviceToHost));
 
   // Get gradXY
-  CUDA_CHECK(cudaMemcpy(d_input, gradXY, imgSize * sizeof(double), cudaMemcpyHostToDevice));
+  double *gradXY = new double[imgSize];
+  CUDA_CHECK(cudaMemcpy(d_input, d_gradXY, imgSize * sizeof(double), cudaMemcpyDeviceToDevice));
   convolveKernel<<<gridSize, blockSize>>>(d_input, d_output, d_flatGaussian, 
     gaussianKernel.size(), imgRow, imgCol);
   CUDA_CHECK(cudaDeviceSynchronize());
