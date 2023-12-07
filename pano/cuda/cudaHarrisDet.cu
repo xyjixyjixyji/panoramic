@@ -26,7 +26,7 @@ __global__ void convolveKernel(const double* input, double* output,
     int k = kernelSize / 2;
     if (y * inputCol + x >= inputRow * inputCol) return;
     if ((y < k || y >= inputRow - k) || (x < k || x >= inputCol - k)) {
-      output[y * inputCol + x] = 0.0; // reset value since we reuse the structure
+      output[y * inputCol + x] = 0.0;
       return;
     }
 
@@ -163,100 +163,85 @@ CudaHarrisCornerDetector::detect(const cv::Mat &image) {
           flatGaussian.size() * sizeof(double), cudaMemcpyHostToDevice));
 
   /* Convolve */
-  double *d_input, *d_output;
-  CUDA_CHECK(cudaMalloc(&d_input, imgSize * sizeof(double)));
-  CUDA_CHECK(cudaMalloc(&d_output, imgSize * sizeof(double)));
-
-  // Get gradX
-  double* gradX = new double[imgSize];
-  CUDA_CHECK(cudaMemcpy(d_input, img, imgSize * sizeof(double), cudaMemcpyHostToDevice));
-  convolveKernel<<<gridSize, blockSize>>>(d_input, d_output, d_flatSobelX, 
-    sobelXKernel.size(), imgRow, imgCol);
-  CUDA_CHECK(cudaDeviceSynchronize());
-  CUDA_CHECK(cudaMemcpy(gradX, d_output, imgSize * sizeof(double), cudaMemcpyDeviceToHost));
-
-  // Get gradY
-  double* gradY = new double[imgSize];
-  convolveKernel<<<gridSize, blockSize>>>(d_input, d_output, d_flatSobelY, 
-    sobelYKernel.size(), imgRow, imgCol);
-  CUDA_CHECK(cudaDeviceSynchronize());
-  CUDA_CHECK(cudaMemcpy(gradY, d_output, imgSize * sizeof(double), cudaMemcpyDeviceToHost));
-
-  // Calculate XX YY XY
-  double *d_gradX, *d_gradY, *d_gradXX, *d_gradYY, *d_gradXY;
+  double *d_img, *d_gradX, *d_gradY;
+  double *d_gradXXMid, *d_gradYYMid, *d_gradXYMid;
+  double *d_gradXX, *d_gradYY, *d_gradXY;
+  CUDA_CHECK(cudaMalloc(&d_img, imgSize * sizeof(double)));
   CUDA_CHECK(cudaMalloc(&d_gradX, imgSize * sizeof(double)));
   CUDA_CHECK(cudaMalloc(&d_gradY, imgSize * sizeof(double)));
+  CUDA_CHECK(cudaMalloc(&d_gradXXMid, imgSize * sizeof(double)));
+  CUDA_CHECK(cudaMalloc(&d_gradYYMid, imgSize * sizeof(double)));
+  CUDA_CHECK(cudaMalloc(&d_gradXYMid, imgSize * sizeof(double)));
   CUDA_CHECK(cudaMalloc(&d_gradXX, imgSize * sizeof(double)));
   CUDA_CHECK(cudaMalloc(&d_gradYY, imgSize * sizeof(double)));
   CUDA_CHECK(cudaMalloc(&d_gradXY, imgSize * sizeof(double)));
-  CUDA_CHECK(cudaMemcpy(d_gradX, gradX, imgSize * sizeof(double), cudaMemcpyHostToDevice));
-  CUDA_CHECK(cudaMemcpy(d_gradY, gradY, imgSize * sizeof(double), cudaMemcpyHostToDevice));
+  CUDA_CHECK(cudaMemcpy(d_img, img, imgSize * sizeof(double), cudaMemcpyHostToDevice));
 
-  elemWiseMulKernel<<<numBlocks, threadsPerBlock>>>(d_gradX, d_gradY, 
-    d_gradXX, d_gradYY, d_gradXY, imgSize);
+  // Compute gradX
+  convolveKernel<<<gridSize, blockSize>>>(d_img, d_gradX, d_flatSobelX, 
+    sobelXKernel.size(), imgRow, imgCol);
+  // CUDA_CHECK(cudaDeviceSynchronize()); // TODO check if could be deleted
+
+  // Compute gradY
+  convolveKernel<<<gridSize, blockSize>>>(d_img, d_gradY, d_flatSobelY, 
+    sobelYKernel.size(), imgRow, imgCol);
   CUDA_CHECK(cudaDeviceSynchronize());
+
+  // Calculate element wise multiplication XX YY XY
+  elemWiseMulKernel<<<numBlocks, threadsPerBlock>>>(d_gradX, d_gradY, 
+    d_gradXXMid, d_gradYYMid, d_gradXYMid, imgSize);
+  CUDA_CHECK(cudaDeviceSynchronize()); 
 
   // Get gradXX
-  double *gradXX = new double[imgSize];
-  CUDA_CHECK(cudaMemcpy(d_input, d_gradXX, imgSize * sizeof(double), cudaMemcpyDeviceToDevice));
-  convolveKernel<<<gridSize, blockSize>>>(d_input, d_output, d_flatGaussian, 
+  convolveKernel<<<gridSize, blockSize>>>(d_gradXXMid, d_gradXX, d_flatGaussian, 
     gaussianKernel.size(), imgRow, imgCol);
-  CUDA_CHECK(cudaDeviceSynchronize());
-  CUDA_CHECK(cudaMemcpy(gradXX, d_output, imgSize * sizeof(double), cudaMemcpyDeviceToHost));
+  // CUDA_CHECK(cudaDeviceSynchronize());  // TODO check if could be deleted
 
   // Get gradYY
-  double *gradYY = new double[imgSize];
-  CUDA_CHECK(cudaMemcpy(d_input, d_gradYY, imgSize * sizeof(double), cudaMemcpyDeviceToDevice));
-  convolveKernel<<<gridSize, blockSize>>>(d_input, d_output, d_flatGaussian, 
+  convolveKernel<<<gridSize, blockSize>>>(d_gradYYMid, d_gradYY, d_flatGaussian, 
     gaussianKernel.size(), imgRow, imgCol);
-  CUDA_CHECK(cudaDeviceSynchronize());
-  CUDA_CHECK(cudaMemcpy(gradYY, d_output, imgSize * sizeof(double), cudaMemcpyDeviceToHost));
+  // CUDA_CHECK(cudaDeviceSynchronize());  // TODO check if could be deleted
 
   // Get gradXY
-  double *gradXY = new double[imgSize];
-  CUDA_CHECK(cudaMemcpy(d_input, d_gradXY, imgSize * sizeof(double), cudaMemcpyDeviceToDevice));
-  convolveKernel<<<gridSize, blockSize>>>(d_input, d_output, d_flatGaussian, 
+  convolveKernel<<<gridSize, blockSize>>>(d_gradXYMid, d_gradXY, d_flatGaussian, 
     gaussianKernel.size(), imgRow, imgCol);
   CUDA_CHECK(cudaDeviceSynchronize());
-  CUDA_CHECK(cudaMemcpy(gradXY, d_output, imgSize * sizeof(double), cudaMemcpyDeviceToHost));
 
+  CUDA_CHECK(cudaFree(d_img));
+  CUDA_CHECK(cudaFree(d_gradX));
+  CUDA_CHECK(cudaFree(d_gradY));
+  CUDA_CHECK(cudaFree(d_gradXXMid));
+  CUDA_CHECK(cudaFree(d_gradYYMid));
+  CUDA_CHECK(cudaFree(d_gradXYMid));
   CUDA_CHECK(cudaFree(d_flatSobelX));
   CUDA_CHECK(cudaFree(d_flatSobelY));
   CUDA_CHECK(cudaFree(d_flatGaussian));
 
   /*=============================== PART 3: BUILD HARRISRESP ===============================*/
-  double *d_XX, *d_YY, *d_XY;
-  CUDA_CHECK(cudaMalloc(&d_XX, imgSize * sizeof(double)));
-  CUDA_CHECK(cudaMalloc(&d_YY, imgSize * sizeof(double)));
-  CUDA_CHECK(cudaMalloc(&d_XY, imgSize * sizeof(double)));
-  CUDA_CHECK(cudaMemcpy(d_XX, gradXX, imgSize * sizeof(double), cudaMemcpyHostToDevice));
-  CUDA_CHECK(cudaMemcpy(d_YY, gradYY, imgSize * sizeof(double), cudaMemcpyHostToDevice));
-  CUDA_CHECK(cudaMemcpy(d_XY, gradXY, imgSize * sizeof(double), cudaMemcpyHostToDevice));
-
-  double* harrisResp = new double[imgSize];
-  harrisRespKernel<<<numBlocks, threadsPerBlock>>>(d_XX, d_YY, d_XY, d_output, imgSize, options_.k_);
+  double *d_harrisResp;
+  CUDA_CHECK(cudaMalloc(&d_harrisResp, imgSize * sizeof(double)));
+  
+  harrisRespKernel<<<numBlocks, threadsPerBlock>>>(
+    d_gradXX, d_gradYY, d_gradXY, d_harrisResp, imgSize, options_.k_);
   CUDA_CHECK(cudaDeviceSynchronize());
-  CUDA_CHECK(cudaMemcpy(harrisResp, d_output, imgSize * sizeof(double), cudaMemcpyDeviceToHost));
 
-  CUDA_CHECK(cudaFree(d_XX));
-  CUDA_CHECK(cudaFree(d_YY));
-  CUDA_CHECK(cudaFree(d_XY));
-  CUDA_CHECK(cudaFree(d_output));
+  CUDA_CHECK(cudaFree(d_gradXX));
+  CUDA_CHECK(cudaFree(d_gradYY));
+  CUDA_CHECK(cudaFree(d_gradXY));
 
   /*=============================== PART 4: FIND KEYPOINTS ===============================*/
   // Non-maximum suppression
   bool *d_isKeypoint; // set to all false initially
   CUDA_CHECK(cudaMalloc(&d_isKeypoint, imgSize * sizeof(bool)));
   CUDA_CHECK(cudaMemset(d_isKeypoint, false, imgSize * sizeof(bool)));
-  CUDA_CHECK(cudaMemcpy(d_input, harrisResp, imgSize * sizeof(double), cudaMemcpyHostToDevice));
 
   bool* isKeypoint = new bool[imgSize];
-  findKeypointKernel<<<gridSize, blockSize>>>(d_input, d_isKeypoint,
+  findKeypointKernel<<<gridSize, blockSize>>>(d_harrisResp, d_isKeypoint,
     options_.nmsThresh_, options_.nmsNeighborhood_ / 2, imgRow, imgCol);
   CUDA_CHECK(cudaDeviceSynchronize());
   CUDA_CHECK(cudaMemcpy(isKeypoint, d_isKeypoint, imgSize * sizeof(bool), cudaMemcpyDeviceToHost));
 
-  CUDA_CHECK(cudaFree(d_input));
+  CUDA_CHECK(cudaFree(d_harrisResp));
   CUDA_CHECK(cudaFree(d_isKeypoint));
 
   std::vector<cv::KeyPoint> keypoints;
