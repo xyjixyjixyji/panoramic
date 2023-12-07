@@ -165,12 +165,15 @@ seqHarrisCornerDetectorDetect(const cv::Mat &image,
           if (i == 0 && j == 0)
             continue;
           max_resp = std::max(max_resp, harrisResp.at<double>(y + i, x + j));
+          if (max_resp > resp)
+            goto bail;
         }
       }
 
       if (resp > max_resp) {
         keypoints.push_back(cv::KeyPoint(x, y, 1.f));
       }
+    bail : {}
     }
   }
 
