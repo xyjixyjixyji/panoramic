@@ -5,6 +5,12 @@
 #include <opencv2/features2d.hpp>
 #include <stitcher.hpp>
 #include <vector>
+#include <cstdlib>
+#include <stdio.h>
+
+/* For benchmark. */
+const int datapointNum = 9;
+char buffer[80];
 
 std::vector<std::vector<double>> getSobelXKernel() {
   return {{-1, 0, 1}, {-2, 0, 2}, {-1, 0, 1}};
@@ -104,6 +110,133 @@ cv::Mat timedStitchAllSequential(std::vector<cv::Mat> images,
 
   Timer timer("Time to stitch all images", shouldPrint);
   return __stitchAllSequential(images, options);
+}
+
+void parseResult(std::vector<double> &store) {
+  FILE *file = fopen("output.txt", "r");
+
+  double myDouble;
+  int myInt;
+  for (int i = 0; i < datapointNum; i++) {
+    if (fgets(buffer, sizeof(buffer), file) != NULL) {
+        if (sscanf(buffer, "%*[^0123456789.-]%lf", &myDouble) == 1) {
+            store[i] += myDouble;
+        } else if (sscanf(buffer, "%d", &myInt) == 1) {
+            store[i] += myInt;
+        } else {
+            i--;
+        }
+    } else {
+      std::cout << ("missing datapoints!") << std::endl;
+      break;
+    }
+  }
+
+  fclose(file);
+}
+
+void printArray(std::vector<double> &data, int iter, std::string prompt) {
+  std::cout << prompt;
+  for (int i = 0; i < datapointNum; ++i) {
+    std::cout << data[i] / iter << " ";
+  }
+  std::cout << std::endl;
+}
+
+void launchSequentialBenchmark(int iter, std::string& imgPathes, 
+  std::string& redirect, std::vector<double> &data) {
+  std::string cmd = "./build/pano_cmd --detector seq --ransac seq";
+
+  for (int i = 0; i < iter; i++) {
+    std::system((cmd + imgPathes + redirect).c_str());
+    parseResult(data);
+  }
+}
+
+void launchCudaBenchmark(int iter, std::string& imgPathes, 
+  std::string& redirect, std::vector<double> &data) {
+  std::string cmd = "./build/pano_cmd --detector cuda --ransac ocv";
+
+  for (int i = 0; i < iter; i++) {
+    std::system((cmd + imgPathes + redirect).c_str());
+    parseResult(data);
+  }
+}
+
+void launchOmpBenchmark(int iter, std::string& imgPathes, 
+  std::string& redirect, std::vector<double> &data, std::string num_threads) {
+  std::string set_thread_num = "OMP_NUM_THREADS=";
+  std::string cmd = " && ./build/pano_cmd --detector omp --ransac omp";
+
+  for (int i = 0; i < iter; i++) {
+    std::system((set_thread_num + num_threads + cmd + imgPathes + redirect).c_str());
+    parseResult(data);
+  }
+}
+
+void launchMpiBenchmark(int iter, std::string& imgPathes, 
+  std::string& redirect, std::vector<double> &data, std::string num_threads) {
+  std::string set_thread_num = "mpirun -n ";
+  std::string cmd = " ./build/pano_cmd --detector mpi --ransac mpi";
+
+  for (int i = 0; i < iter; i++) {
+    std::system((set_thread_num + num_threads + cmd + imgPathes + redirect).c_str());
+    parseResult(data);
+  }
+}
+
+void benchmark(std::string machine) {
+  bool ghc = machine == "ghc";
+  int iter = 5;
+  std::string imgPrompt = " --img ./data/";
+  std::string redirect = "> output.txt 2> mpi.suppress";
+  std::vector<std::string> threadCount = {"2", "4", "8"};
+
+  if (!ghc) {
+      threadCount = {"16", "32", "64", "128"};
+  }
+
+  std::vector<std::vector<std::string>> tasks = {
+    {"Random Lines", "random1.png", "random2.png"},
+    {"View - Two Images", "viewL.png", "viewR.png"},
+    {"View - Four Images", "v1.png", "v2.png", "v3.png", "v4.png"},
+  };
+
+  for (std::vector<std::string> task : tasks) {
+    std::cout << "Task - " << task[0] << std::endl;
+
+    std::vector<double> seq(datapointNum, 0.0);
+    std::vector<double> cuda(datapointNum, 0.0);
+    std::vector<std::vector<double>> omp(threadCount.size(), std::vector<double>(datapointNum, 0.0));
+    std::vector<std::vector<double>> mpi(threadCount.size(), std::vector<double>(datapointNum, 0.0));
+
+    for (size_t i = 1; i < task.size() - 1; i++) {
+      // Build image path
+      std::string imgPathes = imgPrompt + task[i] + imgPrompt + task[i + 1];
+
+      // Launch benchmarks
+      if (ghc) {
+        launchSequentialBenchmark(iter, imgPathes, redirect, seq);
+        launchCudaBenchmark(iter, imgPathes, redirect, cuda);
+      }
+
+      for (size_t i = 0; i < threadCount.size(); i++) {
+        launchOmpBenchmark(iter, imgPathes, redirect, omp[i], threadCount[i]);
+        launchMpiBenchmark(iter, imgPathes, redirect, mpi[i], threadCount[i]);
+      }
+    }
+
+    // Print results
+    if (ghc) {
+      printArray(seq, iter, "seq: ");
+      printArray(cuda, iter, "cuda: ");
+    }
+    for (size_t i = 0; i < threadCount.size(); i++) {
+      printArray(omp[i], iter, "omp_" + threadCount[i] + ": ");
+      printArray(mpi[i], iter, "mpi_" + threadCount[i] + ": ");
+    }
+    std::cout << std::endl;
+  }
 }
 
 std::vector<cv::KeyPoint>

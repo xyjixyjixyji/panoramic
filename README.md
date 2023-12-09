@@ -14,13 +14,22 @@ Parallel Panoramic Image Stitching
 ```shell
 # For regular runs
 > make build
-> ./build/pano_cmd --detector seq --ransac ocv --img ./data/viewL.png --img ./data/viewR.png
+> ./build/pano_cmd --detector seq --ransac seq --img ./data/viewL.png --img ./data/viewR.png
 
 # For multiple images
 > ./build/pano_cmd --detector seq --ransac ocv --img ./data/v1.png --img ./data/v2.png --img ./data/v3.png --img ./data/v4.png
 
 # For mpi runs
-> mpirun -n 1 ./build/pano_cmd --detector mpi --ransac mpi --img ./data/viewL.png --img ./data/viewR.png
+> mpirun -n 8 ./build/pano_cmd --detector mpi --ransac mpi --img ./data/viewL.png --img ./data/viewR.png
+
+# For omp runs
+> OMP_NUM_THREADS=8 && ./build/pano_cmd --detector mpi --ransac mpi --img ./data/viewL.png --img ./data/viewR.png
+
+# For cuda runs
+> ./build/pano_cmd --detector cuda --ransac ocv --img ./data/viewL.png --img ./data/viewR.png
+
+# For benchmark
+> ./build/pano_cmd --benchmark (ghc | psc)
 ```
 
 ## Usage
@@ -29,14 +38,15 @@ Parallel Panoramic Image Stitching
 > make build
 > ./build/pano_cmd -h
 
-Usage: Panoramic Image Stitcher [--help] [--version] --img VAR [--detector VAR] [--ransac VAR] [--warp VAR] [--harris-k VAR] [--harris-nms-thresh VAR] [--harris-nms-neigh VAR] [--harris-patch-size VAR] [--harris-max-ssd VAR] [--ransac-num-iter VAR] [--ransac-num-samples VAR] [--ransac-dist-thresh VAR]
+Usage: Panoramic Image Stitcher [--help] [--version] [--benchmark VAR] [--img VAR] [--detector VAR] [--ransac VAR] [--harris-k VAR] [--harris-nms-thresh VAR] [--harris-nms-neigh VAR] [--harris-patch-size VAR] [--harris-max-ssd VAR] [--ransac-num-iter VAR] [--ransac-num-samples VAR] [--ransac-dist-thresh VAR]
 
 Optional arguments:
-  -h, --help            shows help message and exits
-  -v, --version         prints version information and exits
-  --img                 The images you want to stitch, from **left to right** [required]
+  -h, --help            shows help message and exits 
+  -v, --version         prints version information and exits 
+  --benchmark           Indicate if we are benchmarking the program: ghc | psc [nargs=0..1] [default: ""]
+  --img                 The images you want to stitch, from **left to right** [nargs=0..1] [default: {}]
   --detector            The type of feature detector to use: seq | ocv | mpi | ... [nargs=0..1] [default: "seq"]
-  --ransac              The type of RANSAC to use: seq | ocv [nargs=0..1] [default: "seq"]
+  --ransac              The type of RANSAC to use: seq | ocv | mpi | ... [nargs=0..1] [default: "seq"]
   --harris-k            The k parameter for Harris Corner Detector [nargs=0..1] [default: 0.03]
   --harris-nms-thresh   The threshold for non-maximum suppression [nargs=0..1] [default: 5000]
   --harris-nms-neigh    The neighborhood size for non-maximum suppression [nargs=0..1] [default: 3]
