@@ -9,7 +9,7 @@
 
 int main(int argc, char **argv) {
   PanoramicOptions options = PanoramicOptions::getRuntimeOptions(argc, argv);
-  
+
   /* In benchmark mode. */
   if (options.benchmark_ != "") {
     benchmark(options.benchmark_);

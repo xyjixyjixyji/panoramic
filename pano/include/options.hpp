@@ -138,7 +138,8 @@ struct PanoramicOptions {
 
   PanoramicOptions(argparse::ArgumentParser &args) {
     benchmark_ = args.get<std::string>("--benchmark");
-    if (benchmark_ != noBenchmark && benchmark_ != ghcBenchmark && benchmark_ != pscBenchmark) {
+    if (benchmark_ != noBenchmark && benchmark_ != ghcBenchmark &&
+        benchmark_ != pscBenchmark) {
       panic("Invalid benchmark type!");
     }
 

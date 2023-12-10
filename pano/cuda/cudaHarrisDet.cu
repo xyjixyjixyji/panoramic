@@ -118,8 +118,7 @@ std::vector<double> flattenMatrix(std::vector<std::vector<double>> &mat) {
 std::vector<cv::KeyPoint>
 CudaHarrisCornerDetector::detect(const cv::Mat &image) {
 
-  /* =============================== PART 1: CONVERT IMAGE
-   * =======================*/
+  /* ========================== PART 1: CONVERT IMAGE =======================*/
   // Ensure the image is grayscale
   cv::Mat gray;
   if (image.channels() == 3) {
@@ -209,13 +208,11 @@ CudaHarrisCornerDetector::detect(const cv::Mat &image) {
   convolveKernel<<<gridSize, blockSize>>>(d_gradXXMid, d_gradXX, d_flatGaussian,
                                           gaussianKernel.size(), imgRow,
                                           imgCol);
-  // CUDA_CHECK(cudaDeviceSynchronize());  // TODO check if could be deleted
 
   // Get gradYY
   convolveKernel<<<gridSize, blockSize>>>(d_gradYYMid, d_gradYY, d_flatGaussian,
                                           gaussianKernel.size(), imgRow,
                                           imgCol);
-  // CUDA_CHECK(cudaDeviceSynchronize());  // TODO check if could be deleted
 
   // Get gradXY
   convolveKernel<<<gridSize, blockSize>>>(d_gradXYMid, d_gradXY, d_flatGaussian,
@@ -233,8 +230,7 @@ CudaHarrisCornerDetector::detect(const cv::Mat &image) {
   CUDA_CHECK(cudaFree(d_flatSobelY));
   CUDA_CHECK(cudaFree(d_flatGaussian));
 
-  /*=============================== PART 3: BUILD HARRISRESP
-   * ===============================*/
+  /*======================= PART 3: BUILD HARRISRESP  =======================*/
   double *d_harrisResp;
   CUDA_CHECK(cudaMalloc(&d_harrisResp, imgSize * sizeof(double)));
 
@@ -246,8 +242,7 @@ CudaHarrisCornerDetector::detect(const cv::Mat &image) {
   CUDA_CHECK(cudaFree(d_gradYY));
   CUDA_CHECK(cudaFree(d_gradXY));
 
-  /*=============================== PART 4: FIND KEYPOINTS
-   * ===============================*/
+  /*======================= PART 4: FIND KEYPOINTS /*=======================*/
   // Non-maximum suppression
   bool *d_isKeypoint; // set to all false initially
   CUDA_CHECK(cudaMalloc(&d_isKeypoint, imgSize * sizeof(bool)));

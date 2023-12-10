@@ -1,12 +1,12 @@
 #include <cassert>
 #include <common.hpp>
 #include <cstdint>
+#include <cstdlib>
 #include <opencv2/core/mat.hpp>
 #include <opencv2/features2d.hpp>
+#include <stdio.h>
 #include <stitcher.hpp>
 #include <vector>
-#include <cstdlib>
-#include <stdio.h>
 
 /* For benchmark. */
 const int datapointNum = 9;
@@ -119,13 +119,13 @@ void parseResult(std::vector<double> &store) {
   int myInt;
   for (int i = 0; i < datapointNum; i++) {
     if (fgets(buffer, sizeof(buffer), file) != NULL) {
-        if (sscanf(buffer, "%*[^0123456789.-]%lf", &myDouble) == 1) {
-            store[i] += myDouble;
-        } else if (sscanf(buffer, "%d", &myInt) == 1) {
-            store[i] += myInt;
-        } else {
-            i--;
-        }
+      if (sscanf(buffer, "%*[^0123456789.-]%lf", &myDouble) == 1) {
+        store[i] += myDouble;
+      } else if (sscanf(buffer, "%d", &myInt) == 1) {
+        store[i] += myInt;
+      } else {
+        i--;
+      }
     } else {
       std::cout << ("missing datapoints!") << std::endl;
       break;
@@ -143,8 +143,9 @@ void printArray(std::vector<double> &data, int iter, std::string prompt) {
   std::cout << std::endl;
 }
 
-void launchSequentialBenchmark(int iter, std::string& imgPathes, 
-  std::string& redirect, std::vector<double> &data) {
+void launchSequentialBenchmark(int iter, std::string &imgPathes,
+                               std::string &redirect,
+                               std::vector<double> &data) {
   std::string cmd = "./build/pano_cmd --detector seq --ransac seq";
 
   for (int i = 0; i < iter; i++) {
@@ -153,8 +154,8 @@ void launchSequentialBenchmark(int iter, std::string& imgPathes,
   }
 }
 
-void launchCudaBenchmark(int iter, std::string& imgPathes, 
-  std::string& redirect, std::vector<double> &data) {
+void launchCudaBenchmark(int iter, std::string &imgPathes,
+                         std::string &redirect, std::vector<double> &data) {
   std::string cmd = "./build/pano_cmd --detector cuda --ransac ocv";
 
   for (int i = 0; i < iter; i++) {
@@ -163,8 +164,8 @@ void launchCudaBenchmark(int iter, std::string& imgPathes,
   }
 }
 
-void launchOcvBenchmark(int iter, std::string& imgPathes, 
-  std::string& redirect, std::vector<double> &data) {
+void launchOcvBenchmark(int iter, std::string &imgPathes, std::string &redirect,
+                        std::vector<double> &data) {
   std::string cmd = "./build/pano_cmd --detector ocv --ransac ocv";
 
   for (int i = 0; i < iter; i++) {
@@ -173,24 +174,26 @@ void launchOcvBenchmark(int iter, std::string& imgPathes,
   }
 }
 
-void launchOmpBenchmark(int iter, std::string& imgPathes, 
-  std::string& redirect, std::vector<double> &data, std::string num_threads) {
+void launchOmpBenchmark(int iter, std::string &imgPathes, std::string &redirect,
+                        std::vector<double> &data, std::string num_threads) {
   std::string set_thread_num = "OMP_NUM_THREADS=";
   std::string cmd = " && ./build/pano_cmd --detector omp --ransac omp";
 
   for (int i = 0; i < iter; i++) {
-    std::system((set_thread_num + num_threads + cmd + imgPathes + redirect).c_str());
+    std::system(
+        (set_thread_num + num_threads + cmd + imgPathes + redirect).c_str());
     parseResult(data);
   }
 }
 
-void launchMpiBenchmark(int iter, std::string& imgPathes, 
-  std::string& redirect, std::vector<double> &data, std::string num_threads) {
+void launchMpiBenchmark(int iter, std::string &imgPathes, std::string &redirect,
+                        std::vector<double> &data, std::string num_threads) {
   std::string set_thread_num = "mpirun -n ";
   std::string cmd = " ./build/pano_cmd --detector mpi --ransac mpi";
 
   for (int i = 0; i < iter; i++) {
-    std::system((set_thread_num + num_threads + cmd + imgPathes + redirect).c_str());
+    std::system(
+        (set_thread_num + num_threads + cmd + imgPathes + redirect).c_str());
     parseResult(data);
   }
 }
@@ -203,16 +206,19 @@ void benchmark(std::string machine) {
   std::vector<std::string> threadCount = {"2", "3", "4", "5", "6", "7", "8"};
 
   if (!ghc) {
-      threadCount = {"16", "32", "64", "128"};
+    threadCount = {"16", "32", "64", "128"};
   }
 
   // Available tasks
   std::vector<std::vector<std::string>> tasks = {
-    {"Random Lines - 2 Img, Sparse KeyPt, High Matching", "random1.png", "random2.png"},
-    {"Space - 2 Img, Sparse KeyPt, Low Matching", "space1.jpg", "space2.jpg"},
-    {"View - 2 Img, Dense KeyPt, High Matching", "viewL.png", "viewR.png"},
-    {"View - 4 Img, Dense KeyPt, High Matching", "v1.png", "v2.png", "v3.png", "v4.png"},
-    {"Bird - 3 Img, Dense KeyPt, Low Matching", "bird1.jpg", "bird2.jpg", "bird3.jpg"},
+      {"Random Lines - 2 Img, Sparse KeyPt, High Matching", "random1.png",
+       "random2.png"},
+      {"Space - 2 Img, Sparse KeyPt, Low Matching", "space1.jpg", "space2.jpg"},
+      {"View - 2 Img, Dense KeyPt, High Matching", "viewL.png", "viewR.png"},
+      {"View - 4 Img, Dense KeyPt, High Matching", "v1.png", "v2.png", "v3.png",
+       "v4.png"},
+      {"Bird - 3 Img, Dense KeyPt, Low Matching", "bird1.jpg", "bird2.jpg",
+       "bird3.jpg"},
   };
 
   for (std::vector<std::string> task : tasks) {
@@ -221,8 +227,10 @@ void benchmark(std::string machine) {
     std::vector<double> seq(datapointNum, 0.0);
     std::vector<double> cuda(datapointNum, 0.0);
     std::vector<double> ocv(datapointNum, 0.0);
-    std::vector<std::vector<double>> omp(threadCount.size(), std::vector<double>(datapointNum, 0.0));
-    std::vector<std::vector<double>> mpi(threadCount.size(), std::vector<double>(datapointNum, 0.0));
+    std::vector<std::vector<double>> omp(
+        threadCount.size(), std::vector<double>(datapointNum, 0.0));
+    std::vector<std::vector<double>> mpi(
+        threadCount.size(), std::vector<double>(datapointNum, 0.0));
 
     for (size_t i = 1; i < task.size() - 1; i++) {
       // Build image path

@@ -1,8 +1,8 @@
 #include <common.hpp>
+#include <fstream>
+#include <iostream>
 #include <options.hpp>
 #include <stitcher.hpp>
-#include <iostream>
-#include <fstream>
 
 cv::Mat warpOcv(cv::Mat imageL, cv::Mat imageR, cv::Mat homography) {
   // Create an output image large enough to hold both images
