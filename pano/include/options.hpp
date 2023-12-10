@@ -181,7 +181,8 @@ struct PanoramicOptions {
         .default_value(std::vector<std::string>{});
 
     args.add_argument("--detector")
-        .help("The type of feature detector to use: seq | ocv | mpi | ...")
+        .help("The type of feature detector and matcher to use: seq | ocv | "
+              "mpi | cuda |...")
         .default_value(SeqHarrisDetector);
 
     args.add_argument("--ransac")
