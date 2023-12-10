@@ -6,6 +6,11 @@
 #include <optional>
 #include <stdexcept>
 
+inline void panic(const char *msg) {
+  printf("%s\n", msg);
+  exit(1);
+}
+
 // --detector
 const std::string SeqHarrisDetector = "seq";
 const std::string OpenCVHarrisDetector = "ocv";
@@ -19,6 +24,11 @@ const std::string OcvRansac = "ocv";
 const std::string MPIRansac = "mpi";
 const std::string OmpRansac = "omp";
 const std::string CudaRansac = "cuda";
+
+// -- benchmark
+const std::string noBenchmark = "";
+const std::string ghcBenchmark = "ghc";
+const std::string pscBenchmark = "psc";
 
 struct HarrisCornerOptions {
   // Smaller k leads to more sensitive detection
@@ -120,16 +130,29 @@ struct PanoramicOptions {
   RansacOptions ransacOptions_;
   std::vector<std::string> imgPaths_;
 
+  std::string benchmark_; // In benchmark mode or not
+
   bool use_mpi_; // MPI Only
   int nproc_;    // MPI Only
   int pid_;      // MPI Only
 
   PanoramicOptions(argparse::ArgumentParser &args) {
+    benchmark_ = args.get<std::string>("--benchmark");
+    if (benchmark_ != noBenchmark && benchmark_ != ghcBenchmark &&
+        benchmark_ != pscBenchmark) {
+      panic("Invalid benchmark type!");
+    }
+
     auto detectorType = args.get<std::string>("--detector");
     imgPaths_ = args.get<std::vector<std::string>>("--img");
 
+    if (benchmark_ == noBenchmark && imgPaths_.size() < 2) {
+      panic("Needs at least 2 images to stitch.");
+    }
+
     detOptions_.harrisOptions_ = std::make_optional(HarrisCornerOptions(args));
     detOptions_.detectorType_ = detectorType;
+
     use_mpi_ = false;
     if (detectorType == MPIHarrisDetector) {
       use_mpi_ = true;
@@ -148,10 +171,14 @@ struct PanoramicOptions {
   static PanoramicOptions getRuntimeOptions(int argc, char **argv) {
     argparse::ArgumentParser args("Panoramic Image Stitcher");
 
+    args.add_argument("--benchmark")
+        .help("Indicate if we are benchmarking the program: ghc | psc")
+        .default_value(noBenchmark);
+
     args.add_argument("--img")
         .help("The images you want to stitch, from **left to right**")
         .append()
-        .required();
+        .default_value(std::vector<std::string>{});
 
     args.add_argument("--detector")
         .help("The type of feature detector and matcher to use: seq | ocv | "

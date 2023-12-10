@@ -39,7 +39,9 @@ Parallel Panoramic Image Stitching
 
 # For multiple images
 > ./build/pano_cmd --detector cuda --ransac ocv --img ./data/v1.png --img ./data/v2.png --img ./data/v3.png --img ./data/v4.png
-```
+
+# For benchmark
+> ./build/pano_cmd --benchmark (ghc | psc)
 
 ## Usage
 
@@ -51,7 +53,8 @@ Usage: Panoramic Image Stitcher [--help] [--version] --img VAR [--detector VAR] 
 Optional arguments:
   -h, --help            shows help message and exits 
   -v, --version         prints version information and exits 
-  --img                 The images you want to stitch, from **left to right** [required]
+  --benchmark           Indicate if we are benchmarking the program: ghc | psc [nargs=0..1] [default: ""]
+  --img                 The images you want to stitch, from **left to right** [nargs=0..1] [default: {}]
   --detector            The type of feature detector and matcher to use: seq | ocv | mpi | cuda |... [nargs=0..1] [default: "seq"]
   --ransac              The type of RANSAC to use: seq | ocv | mpi | ... [nargs=0..1] [default: "seq"]
   --harris-k            The k parameter for Harris Corner Detector [nargs=0..1] [default: 0.03]

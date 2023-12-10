@@ -9,8 +9,14 @@
 
 int main(int argc, char **argv) {
   PanoramicOptions options = PanoramicOptions::getRuntimeOptions(argc, argv);
+
+  /* In benchmark mode. */
+  if (options.benchmark_ != "") {
+    benchmark(options.benchmark_);
+    return 0;
+  }
+
   std::vector<std::string> imgPaths = options.imgPaths_;
-  assert(imgPaths.size() >= 2 && "Need at least 2 images to stitch");
 
   std::vector<cv::Mat> toWarped;
   for (auto &imgPath : imgPaths) {

@@ -1,4 +1,6 @@
 #include <common.hpp>
+#include <fstream>
+#include <iostream>
 #include <options.hpp>
 #include <stitcher.hpp>
 

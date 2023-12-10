@@ -23,6 +23,8 @@ cv::Mat __stitchAllSequential(std::vector<cv::Mat> images,
 cv::Mat timedStitchAllSequential(std::vector<cv::Mat> images,
                                  PanoramicOptions options);
 
+void benchmark(std::string machine);
+
 std::vector<cv::KeyPoint>
 seqHarrisCornerDetectorDetect(const cv::Mat &image,
                               HarrisCornerOptions options);
@@ -32,11 +34,6 @@ seqHarrisMatchKeyPoints(std::vector<cv::KeyPoint> keypointsL,
                         std::vector<cv::KeyPoint> keypointsR,
                         const cv::Mat &image1, const cv::Mat &image2,
                         const HarrisCornerOptions options, int offset);
-
-inline void panic(const char *msg) {
-  printf("%s\n", msg);
-  exit(1);
-}
 
 class Timer {
 public:
