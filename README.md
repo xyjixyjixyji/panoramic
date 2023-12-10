@@ -32,7 +32,7 @@ Parallel Panoramic Image Stitching
 > mpirun -n 8 ./build/pano_cmd --detector mpi --ransac mpi --img ./data/viewL.png --img ./data/viewR.png
 
 # For openmp runs
-> ./build/pano_cmd --detector omp --ransac omp --img ./data/viewL.png --img ./data/viewR.png
+> OMP_MAX_THREADS=8 ./build/pano_cmd --detector omp --ransac omp --img ./data/viewL.png --img ./data/viewR.png
 
 # For cuda runs
 > ./build/pano_cmd --detector cuda --ransac ocv --img ./data/viewL.png --img ./data/viewR.png
@@ -45,6 +45,7 @@ Parallel Panoramic Image Stitching
 
 > ./build/pano_cmd --help
 
+```
 Usage: Panoramic Image Stitcher [--help] [--version] --img VAR [--detector VAR] [--ransac VAR] [--harris-k VAR] [--harris-nms-thresh VAR] [--harris-nms-neigh VAR] [--harris-patch-size VAR] [--harris-max-ssd VAR] [--ransac-num-iter VAR] [--ransac-num-samples VAR] [--ransac-dist-thresh VAR]
 
 Optional arguments:
