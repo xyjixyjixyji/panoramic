@@ -42,12 +42,14 @@ Parallel Panoramic Image Stitching
 
 # For benchmark
 > ./build/pano_cmd --benchmark (ghc | psc)
+```
 
 ## Usage
 
+```shell
 > ./build/pano_cmd --help
 
-```
+
 Usage: Panoramic Image Stitcher [--help] [--version] --img VAR [--detector VAR] [--ransac VAR] [--harris-k VAR] [--harris-nms-thresh VAR] [--harris-nms-neigh VAR] [--harris-patch-size VAR] [--harris-max-ssd VAR] [--ransac-num-iter VAR] [--ransac-num-samples VAR] [--ransac-dist-thresh VAR]
 
 Optional arguments:
