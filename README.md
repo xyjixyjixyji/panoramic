@@ -7,7 +7,9 @@ Parallel Panoramic Image Stitching
 - URL [Project Webpage URL](https://ji-xinyou.github.io/panoramic/)
 - (MISC) To build on GHC machine: add this `export OpenCV_DIR="/usr/local/depot/fsl/fslpython/envs/fslpython/lib/cmake/opencv4"` to your bashrc
   - Moreover, some GHC machines do not have opencv4 installed, we know that ghc61, ghc30 (and maybe some others) have opencv4 installed
-- (MISC) To run MPI normally on macOS, run `export TMPDIR=/tmp` to avoid unlink syscall failure.
+- (MISC) OSX
+  - Remember to set OpenMP_ROOT envvar
+  - run `export TMPDIR=/tmp` to avoid unlink syscall failure.
   - Note that the MPI on macOS has unstable and degraded performance compared to Linux
 
 ## Build Requirements
